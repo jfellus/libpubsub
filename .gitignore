@@ -2,3 +2,4 @@
 /libpubsub.so
 /test/*.o
 /example*
+.*
