@@ -1,12 +1,12 @@
 
-/////////////////////////////////////////////////////////////////////////////
-// EXAMPLE 3 : Multiple subscribers to an input channel with TCP transport //
-/////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
+// EXAMPLE 3 : Multiple subscribers to an output channel with TCP transport //
+//////////////////////////////////////////////////////////////////////////////
 
 #include <libpubsub.h>
 #include <unistd.h>
 #include <stdio.h>
-#include <utils/utils.h>
+
 
 using namespace pubsub;
 
@@ -24,14 +24,15 @@ void A() {
 	// PEER A : PUBLISHER
 
 	// Publish an input channel with name 'prout'
-	int fd = publish_in("prout", [&](const char* buf, size_t len) {
-		printf("[publisher] : %s\n", buf);
-	});
+	int fd = publish_out("prout");
 
 	// Offer a TCP transport for this channel
 	offer_transport("prout", "tcp://:12000");
 
-	sleep(1000);
+	for(;;) {
+		send(fd, "taradata");
+		usleep(100000);
+	}
 
 	} catch(const char* e) {
 		fprintf(stderr, "ERROR : %s\n", e);
@@ -41,8 +42,6 @@ void A() {
 
 void B() {
 	try {
-	srand(time(NULL));
-	int ID = rand();
 
 	//////////////////////////
 	// PEER B : SUBSCRIBER1
@@ -51,12 +50,11 @@ void B() {
 	add_host("localhost:12212");
 
 	// Subscribe to 'prout' using any available TCP transport
-	int fd = subscribe_out("prout", "tcp://");
+	int fd = subscribe_in("prout", "tcp://", [&](const char* buf, size_t len) {
+		printf("[subscriber] : %s\n", buf);
+	});
 
-	for(;;) {
-		send(fd, SSTR("taradata_" << ID));
-		usleep(100000);
-	}
+	sleep(100);
 
 	} catch(const char* e) {
 		fprintf(stderr, "ERROR : %s\n", e);
