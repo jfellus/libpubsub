@@ -13,6 +13,9 @@
 
 namespace pubsub {
 
+extern int DBG_LEVEL;
+
+
 typedef void (*DataCallback) (const char* buf, size_t len);
 
 

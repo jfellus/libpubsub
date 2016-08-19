@@ -9,7 +9,9 @@
 #include "utils.h"
 #include <algorithm>
 
-int DBG_LEVEL = 0;
+namespace pubsub {
+	int DBG_LEVEL = 0;
+}
 
 
 std::string str_replace(std::string subject, const std::string& search, const std::string& replace) {

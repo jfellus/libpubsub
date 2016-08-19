@@ -90,9 +90,8 @@ void SignalingServer::on_receive(TCPSocket* connection, char* buf, size_t len) {
 
 		if(ep->on_remote_offered_transport(td)) {
 			DBG_2("[signaling] Transport \"%s\" offered for channel \"%s\"\n", td.to_string().c_str(), ep->name.c_str());
+			broadcast_published_channels();
 		}
-
-		broadcast_published_channels();
 	}
 	else if(buf[0] == 'C') {
 		// Remote host committed a change

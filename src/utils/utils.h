@@ -46,6 +46,5 @@ template <typename T> void vector_remove(std::vector<T>& v, const T& a) {
 #define DBG_3(x...) do { if(DBG_LEVEL > 2) printf(x); } while(0)
 #define DBG_4(x...) do { if(DBG_LEVEL > 3) printf(x); } while(0)
 
-extern int DBG_LEVEL;
 
 #endif /* SRC_UTILS_UTILS_H_ */

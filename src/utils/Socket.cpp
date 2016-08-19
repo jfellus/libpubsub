@@ -56,22 +56,20 @@ TCPSocket::TCPSocket(int fd, const char* ip, int port) {
 void TCPSocket::run() {
 	bStop = false;
 	thread = std::thread([&](){
-		try {
-		char buf[1024];
+		char buf[5024];
 		while(!bStop) {
-			int n = recv(fd,buf,1024, 0);
-			if (n < 0) throw "ERROR reading from socket";
-			else if(n == 0) break;
+			int n = recv(fd,buf,5024, 0);
+			if (n <= 0) break;
 			buf[n] = 0;
-			for(int i=0; i<n; i++) {
+			int i;
+			for(i=0; i<n; i++) {
+//				printf("[tcp] <- %s\n", &buf[i]);
 				on_receive(&buf[i], n);
 				while(buf[i]) i++;
 			}
 		}
 		::close(fd);
 		if(on_close) on_close();
-
-		} catch(const char* e) {printf("ERROR : %s (%s)\n", e, strerror(errno));}
 	});
 }
 
@@ -89,6 +87,7 @@ void TCPSocket::close() {
 void TCPSocket::write(const char* buf, size_t len) {
 	if(bStop) return;
 	pthread_mutex_lock(&mut);
+//	printf("[tcp] -> %s\n", buf);
 	int n = ::send(fd, (const void*) buf, len, MSG_NOSIGNAL);
 	if (n < 0) throw "ERROR writing to socket";
 	pthread_mutex_unlock(&mut);
