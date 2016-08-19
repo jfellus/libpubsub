@@ -4,7 +4,8 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include <libpubsub.h>
-
+#include <stdio.h>
+#include <unistd.h>
 
 using namespace pubsub;
 
@@ -34,7 +35,7 @@ int main(int argc, char **argv) {
 
 	// Send data repeatedly
 	for(;;) {
-		send(fd, "ta mere la pute",3);
+		send(fd, "taradata");
 		usleep(100000);
 	}
 

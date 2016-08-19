@@ -8,11 +8,13 @@
 #ifndef SRC_COMMON_H_
 #define SRC_COMMON_H_
 
-#include "utils/utils.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string>
 
 namespace pubsub {
 
-typedef void (*DataCallback) (const char* buf, size_t len);
 
 
 void init();

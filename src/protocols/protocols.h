@@ -8,6 +8,8 @@
 #ifndef SRC_PROTOCOLS_PROTOCOLS_H_
 #define SRC_PROTOCOLS_PROTOCOLS_H_
 
+#include "../libpubsub.h"
+#include "../utils/utils.h"
 #include "../common.h"
 #include "../utils/Socket.h"
 #include <functional>

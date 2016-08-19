@@ -8,9 +8,12 @@
 #ifndef SRC_LIBPUBSUB_H_
 #define SRC_LIBPUBSUB_H_
 
-#include "common.h"
+#include <stdlib.h>
+#include <string.h>
 
 namespace pubsub {
+
+typedef void (*DataCallback) (const char* buf, size_t len);
 
 
 int publish_in(const char* channel, DataCallback cb);

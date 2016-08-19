@@ -11,6 +11,7 @@
 #include <vector>
 #include <string>
 
+#include "libpubsub.h"
 #include "protocols/protocols.h"
 
 
