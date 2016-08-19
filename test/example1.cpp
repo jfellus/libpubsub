@@ -19,7 +19,7 @@ int main(int argc, char **argv) {
 
 	// Publish an input channel with name 'prout'
 	publish_in("prout", [&](const char* buf, size_t len) {
-		printf("PROUT RECV : %s\n", buf);
+		printf("[prout] : %s\n", buf);
 	});
 
 	// Offer a TCP transport for this channel
