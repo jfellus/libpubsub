@@ -16,6 +16,7 @@ typedef void (*DataCallback) (const char* buf, size_t len);
 
 
 void init();
+void uninit();
 
 }
 

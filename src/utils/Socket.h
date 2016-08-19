@@ -20,23 +20,35 @@
 #include <netinet/in.h>
 #include <netdb.h>
 #include <arpa/inet.h>
+#include <functional>
+#include <utility>
 
 class TCPSocket;
 
 class TCPServer {
 public:
+	int port;
+
 	std::thread thread;
 	int sockfd;
 	std::vector<TCPSocket*> connections;
+
+	bool bStop;
 public:
 	TCPServer(int port);
-	virtual ~TCPServer() {}
+	TCPServer(int firstPort, int lastPort); // Find a free port in range [firstPort,lastPort]
+	virtual ~TCPServer();
+
+	void close();
 
 	void broadcast(const char* buf) { broadcast(buf, strlen(buf)+1); }
 	void broadcast(const char* buf, size_t len);
 
 	virtual void on_receive(TCPSocket* connection, char* buf, size_t len) {}
 
+protected:
+	void bind(int port);
+	void run();
 };
 
 class TCPSocket {
@@ -46,10 +58,17 @@ public:
 	std::thread thread;
 	int fd;
 	struct sockaddr_in serv_addr;
+	bool bStop;
+	pthread_mutex_t mut;
+
+	std::function<void()> on_close;
+
 public:
 	TCPSocket(const char* ip, int port);
 	TCPSocket(int fd, const char* ip, int port);
 	virtual ~TCPSocket();
+
+	void close();
 
 	virtual void on_receive(char* buf, size_t len) = 0;
 

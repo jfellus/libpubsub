@@ -9,6 +9,9 @@
 #include "utils.h"
 #include <algorithm>
 
+int DBG_LEVEL = 0;
+
+
 std::string str_replace(std::string subject, const std::string& search, const std::string& replace) {
     size_t pos = 0;
     while ((pos = subject.find(search, pos)) != std::string::npos) {
@@ -52,3 +55,5 @@ std::string str_to_lower(const std::string& s) {
 	std::transform(a.begin(), a.end(), a.begin(), ::tolower);
 	return a;
 }
+
+

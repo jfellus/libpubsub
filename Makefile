@@ -5,9 +5,9 @@ HEADERS:=$(shell find src -name "*.h")
 
 all: libpubsub.so examples
 
-examples: example1
+examples: example1 example2
 
-example1: test/example1.o
+example%: test/example%.o
 	g++ -g -pthread -o $@ $< -L.. -L. -lpubsub -Wl,-rpath=. -Wl,-rpath=..
 
 libpubsub.so: $(OBJECTS)

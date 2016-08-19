@@ -20,11 +20,11 @@ vector<EndPoint*> endpoints;
 // Debug
 
 void dump_endpoints() {
-	printf("\n\nDump endpoints\n------------------\n");
+	DBG_4("\n\nDump endpoints\n------------------\n");
 	for(EndPoint* ep : endpoints) {
-		printf(" - %u : %s (%u transports offered, %u c, %u s)\n", ep->fd, ep->name.c_str(), ep->offeredTransports.size(), ep->clients.size(), ep->servers.size());
+		DBG_4(" - %d : %s (%lu transports offered, %lu c, %lu s)\n", ep->fd, ep->name.c_str(), ep->offeredTransports.size(), ep->clients.size(), ep->servers.size());
 	}
-	printf("----------------\n\n");
+	DBG_4("----------------\n\n");
 }
 
 
@@ -68,7 +68,12 @@ EndPoint::EndPoint(const char* name, DataCallback cb) {
 	endpoints.push_back(this);
 	broadcast_published_channels();
 
-	dump_endpoints();
+	// dump_endpoints();
+}
+
+EndPoint::~EndPoint() {
+	for(Client* c : clients) c->close();
+	for(Server* s : servers) s->close();
 }
 
 
@@ -82,10 +87,11 @@ void EndPoint::offer_transport(const char* transportDescription) {
 	servers.push_back(s);
 
 	offeredTransports.push_back(td);
+	DBG("[pubsub] Offer transport %s for channel %s\n", td.to_string().c_str(), name.c_str());
 
 	broadcast_published_channels();
 
-	dump_endpoints();
+//	dump_endpoints();
 }
 
 void EndPoint::subscribe(const char* transportDescription, DataCallback cb) {
@@ -94,6 +100,7 @@ void EndPoint::subscribe(const char* transportDescription, DataCallback cb) {
 
 	Client* c = td.create_client();
 	c->cb = cb;
+	c->on_close = [&]()->void { vector_remove(clients, c); delete c; };
 	clients.push_back(c);
 }
 
@@ -115,9 +122,10 @@ bool EndPoint::is_transport_offered(const char* transportDescription) {
 	return find_matching_transport(transportDescription).valid;
 }
 
-void EndPoint::on_remote_offered_transport(TransportDescription td) {
-	for(TransportDescription t : offeredTransports) if(t == td) return;
+bool EndPoint::on_remote_offered_transport(TransportDescription td) {
+	for(TransportDescription t : offeredTransports) if(t == td) return false;
 	offeredTransports.push_back(td);
+	return true;
 }
 
 

@@ -10,13 +10,25 @@ extern vector<EndPoint*> endpoints;
 
 
 
-int publish_in(const char* channel, DataCallback cb) { return (new EndPoint(channel, cb))->fd; }
-int publish_out(const char* channel) { return (new EndPoint(channel))->fd; }
+int publish_in(const char* channel, DataCallback cb) {
+	DBG("[pubsub] Publish input : %s\n", channel);
+	EndPoint* ep = new EndPoint(channel, cb);
+	commit();
+	return ep->fd;
+}
+
+int publish_out(const char* channel) {
+	DBG("[pubsub] Publish output : %s\n", channel);
+	EndPoint* ep = new EndPoint(channel);
+	commit();
+	return ep->fd;
+}
 
 void offer_transport(const char* channel, const char* transportDescription) {
 	EndPoint* ep = get_endpoint(channel);
 	if(!ep) throw "Channel not found";
 	ep->offer_transport(transportDescription);
+	commit();
 }
 
 int subscribe_in(const char* channel, const char* transportDescription, DataCallback cb) {

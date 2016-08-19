@@ -10,6 +10,8 @@
 
 #include "../common.h"
 #include "../utils/Socket.h"
+#include <functional>
+#include <utility>
 
 using namespace std;
 
@@ -21,8 +23,12 @@ namespace pubsub {
 class Client {
 public:
 	DataCallback cb;
-	Client() : cb(0) {}
+	std::function<void()> on_close;
+
+	Client() : cb(0), on_close(0) {}
 	virtual ~Client() {}
+
+	virtual void close() {}
 
 	virtual void send(const char* buf, size_t len) = 0;
 };
@@ -31,8 +37,11 @@ public:
 class Server {
 public:
 	DataCallback cb;
+
 	Server() : cb(0) {}
 	virtual ~Server() {}
+
+	virtual void close() {}
 
 	virtual void send(const char* buf, size_t len) = 0;
 };
@@ -95,7 +104,9 @@ public:
 
 class ClientTCP : public Client, public TCPSocket {
 public:
-	ClientTCP(const char* ip, int port) : TCPSocket(ip, port) {}
+	ClientTCP(const char* ip, int port) : TCPSocket(ip, port) {
+		TCPSocket::on_close = [&]() { Client::on_close(); };
+	}
 	virtual ~ClientTCP() {}
 
 	virtual void send(const char* buf, size_t len) { write(buf, len); }
