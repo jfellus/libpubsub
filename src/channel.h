@@ -18,19 +18,11 @@ using namespace std;
 
 namespace pubsub {
 
-
-
-class EndPoint;
-
-
-bool has_endpoint(const char* name);
-EndPoint* get_endpoint(const char* name);
-bool is_transport_offered(const char* channel, const char* transportDescription);
-TransportDescription find_matching_transport(const char* channel, const char* transportDescription);
-void close_all_endpoints();
-
-
-
+/**
+ * An EndPoint holds the declaration of a channel (local or remote) with a given name
+ * An EndPoint can offer several transport protocols (represented as TransportDescriptions)
+ * An EndPoint maintains a set of transport servers and clients for transmitting actual data
+ */
 class EndPoint {
 public:
 	string name;
@@ -61,6 +53,14 @@ public:
 	void on_receive(const char* buf, size_t len) { cb(buf, len); }
 };
 
+
+// Utilities
+
+bool has_endpoint(const char* name);
+EndPoint* get_endpoint(const char* name);
+bool is_transport_offered(const char* channel, const char* transportDescription);
+TransportDescription find_matching_transport(const char* channel, const char* transportDescription);
+void close_all_endpoints();
 
 
 

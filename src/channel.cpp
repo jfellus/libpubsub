@@ -13,21 +13,7 @@
 
 namespace pubsub {
 
-vector<EndPoint*> endpoints;
-
-
-
-// Debug
-
-void dump_endpoints() {
-	DBG_4("\n\nDump endpoints\n------------------\n");
-	for(EndPoint* ep : endpoints) {
-		DBG_4(" - %d : %s (%lu transports offered, %lu c, %lu s)\n", ep->fd, ep->name.c_str(), ep->offeredTransports.size(), ep->clients.size(), ep->servers.size());
-	}
-	DBG_4("----------------\n\n");
-}
-
-
+vector<EndPoint*> endpoints; // The global list of all declared endpoints
 
 
 // Public API
@@ -128,5 +114,19 @@ bool EndPoint::on_remote_offered_transport(TransportDescription td) {
 	return true;
 }
 
+
+
+
+
+
+// Debug
+
+void dump_endpoints() {
+	DBG_4("\n\nDump endpoints\n------------------\n");
+	for(EndPoint* ep : endpoints) {
+		DBG_4(" - %d : %s (%lu transports offered, %lu c, %lu s)\n", ep->fd, ep->name.c_str(), ep->offeredTransports.size(), ep->clients.size(), ep->servers.size());
+	}
+	DBG_4("----------------\n\n");
+}
 
 }

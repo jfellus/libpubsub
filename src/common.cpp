@@ -8,6 +8,7 @@
 #include "common.h"
 #include "hosts.h"
 #include "channel.h"
+#include "signaling.h"
 #include <stdio.h>
 #include <signal.h>
 #include <unistd.h>
@@ -16,7 +17,7 @@ namespace pubsub {
 
 static bool bInit = false;
 
-SignalingServer* signalingServer = NULL;
+
 
 
 

@@ -2,7 +2,7 @@
 #include "channel.h"
 #include "hosts.h"
 #include "common.h"
-
+#include "signaling.h"
 
 namespace pubsub {
 

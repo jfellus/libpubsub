@@ -19,6 +19,7 @@
 #define TOSTRING(x) ((std::ostringstream&)(std::ostringstream().flush() << x)).str()
 #define SSTR(x) TOSTRING(x).c_str()
 
+// String
 
 bool str_ends_with(const std::string& s, const std::string& suffix);
 bool str_starts_with(const std::string& s, const std::string& prefix);
@@ -31,10 +32,14 @@ std::string str_replace(std::string subject, const std::string& search, const st
 bool str_has(const std::string& s, const std::string& needle);
 
 
+// STL extensions
+
 template <typename T> void vector_remove(std::vector<T>& v, const T& a) {
 	v.erase(std::remove(v.begin(), v.end(), a), v.end());
 }
 
+
+// Debugging
 
 #define DBG(x...) do { if(DBG_LEVEL > 0) printf(x); } while(0)
 #define DBG_2(x...) do { if(DBG_LEVEL > 1) printf(x); } while(0)

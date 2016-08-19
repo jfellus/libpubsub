@@ -20,34 +20,14 @@ namespace pubsub {
 #define TRANSPORT_TCP 0
 
 
-class Client {
-public:
-	DataCallback cb;
-	std::function<void()> on_close;
-
-	Client() : cb(0), on_close(0) {}
-	virtual ~Client() {}
-
-	virtual void close() {}
-
-	virtual void send(const char* buf, size_t len) = 0;
-};
+class Client;
+class Server;
 
 
-class Server {
-public:
-	DataCallback cb;
-
-	Server() : cb(0) {}
-	virtual ~Server() {}
-
-	virtual void close() {}
-
-	virtual void send(const char* buf, size_t len) = 0;
-};
+#define INVALID_TRANSPORT_DESCRIPTION TransportDescription()
 
 
-
+/** TransportDescriptions contains information on a specific transport protocol for a particular channel */
 class TransportDescription {
 public:
 	bool valid;
@@ -56,6 +36,8 @@ public:
 	string ip;
 	int port;
 
+	/** Parse a TransportDescription string of the form "protocol://address[:port]"
+	 *   (e.g., "tcp://0.0.0.0:1234") */
 	TransportDescription(string desc) {
 		protocol = str_to_lower(str_before(desc, "://"));
 		string url = str_after(desc, "://");
@@ -83,38 +65,37 @@ public:
 	Server* create_server();
 };
 
-#define INVALID_TRANSPORT_DESCRIPTION TransportDescription()
 
 
 
-// TCP transport
 
-class ServerTCP : public Server, public TCPServer {
+/** Implements a channel Client */
+class Client {
 public:
-	ServerTCP(int port) : TCPServer(port) {}
-	virtual ~ServerTCP() {}
+	DataCallback cb;
+	std::function<void()> on_close;
 
-	virtual void send(const char* buf, size_t len) {
-		broadcast(buf, len);
-	}
+	Client() : cb(0), on_close(0) {}
+	virtual ~Client() {}
 
-	virtual void on_receive(TCPSocket* connection, char* buf, size_t len) { if(cb) cb(buf, len); }
+	virtual void close() {}
 
+	virtual void send(const char* buf, size_t len) = 0;
 };
 
-class ClientTCP : public Client, public TCPSocket {
+
+/** Implements a channel Server */
+class Server {
 public:
-	ClientTCP(const char* ip, int port) : TCPSocket(ip, port) {
-		TCPSocket::on_close = [&]() { Client::on_close(); };
-	}
-	virtual ~ClientTCP() {}
+	DataCallback cb;
 
-	virtual void send(const char* buf, size_t len) { write(buf, len); }
+	Server() : cb(0) {}
+	virtual ~Server() {}
 
-	virtual void on_receive(char* buf, size_t len) { if(cb) cb(buf, len); }
+	virtual void close() {}
 
+	virtual void send(const char* buf, size_t len) = 0;
 };
-
 
 
 
