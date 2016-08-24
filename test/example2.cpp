@@ -52,9 +52,11 @@ void B() {
 	int fd = subscribe_out("prout", "tcp://");
 
 	// Send data repeatedly
-	for(;;) {
+	char str[100];
+	for(int i = 0; ; i++) {
 		printf("[send] taradata\n");
-		send(fd, "taradata");
+		sprintf(str, "taradata_%u", i);
+		send(fd, str);
 		usleep(100000);
 	}
 

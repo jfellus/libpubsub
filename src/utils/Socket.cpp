@@ -22,6 +22,7 @@
 // TCPSocket
 
 TCPSocket::TCPSocket(const char* ip, int port) : mut(PTHREAD_MUTEX_INITIALIZER) {
+	sem_init(&semConnected, 0, 0);
 	this->ip = ip;
 	this->port = port;
 	struct hostent * server = gethostbyname(ip);
@@ -35,18 +36,17 @@ TCPSocket::TCPSocket(const char* ip, int port) : mut(PTHREAD_MUTEX_INITIALIZER) 
 	bcopy((char *)server->h_addr, (char *)&serv_addr.sin_addr.s_addr, server->h_length);
 	serv_addr.sin_port = htons(port);
 
-	if (connect(fd,(const sockaddr*)&serv_addr,sizeof(serv_addr)) < 0) throw "ERROR connecting";
-	int one = 1;
-	setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
-
+	isClient = true;
 
 	run();
 }
 
 TCPSocket::TCPSocket(int fd, const char* ip, int port) {
+	sem_init(&semConnected, 0, 0);
 	this->fd = fd;
 	this->ip = ip;
 	this->port = port;
+	isClient = false;
 	int one = 1;
 	setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
 
@@ -56,7 +56,16 @@ TCPSocket::TCPSocket(int fd, const char* ip, int port) {
 void TCPSocket::run() {
 	bStop = false;
 	thread = std::thread([&](){
+
+		if(isClient) {
+			while (connect(fd,(const sockaddr*)&serv_addr,sizeof(serv_addr)) < 0) usleep(500000);
+			int one = 1;
+			setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
+		}
+		sem_post(&semConnected);
+
 		char buf[5024];
+
 		while(!bStop) {
 			int n = recv(fd,buf,5024, 0);
 			if (n <= 0) break;
@@ -78,19 +87,24 @@ TCPSocket::~TCPSocket() {
 	close();
 }
 
+void TCPSocket::wait_connected() {
+	sem_wait(&semConnected);
+}
+
 void TCPSocket::close() {
 	bStop = true;
 	::close(fd);
 }
 
 
-void TCPSocket::write(const char* buf, size_t len) {
-	if(bStop) return;
+bool TCPSocket::write(const char* buf, size_t len) {
+	if(bStop) return false;
 	pthread_mutex_lock(&mut);
 //	printf("[tcp] -> %s\n", buf);
 	int n = ::send(fd, (const void*) buf, len, MSG_NOSIGNAL);
-	if (n < 0) throw "ERROR writing to socket";
 	pthread_mutex_unlock(&mut);
+	if (n < 0) return false;
+	return true;
 }
 
 
@@ -119,15 +133,18 @@ TCPServer::~TCPServer() {
 }
 
 void TCPServer::close() {
-	printf("[tcp] close\n");
 	bStop = true;
-	::close(sockfd);
 	for(TCPSocket* s : connections) s->close();
+	::close(sockfd);
 }
 
 void TCPServer::bind(int port) {
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	if (sockfd < 0) throw "ERROR opening socket";
+
+	int one = 1;
+	setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
+	setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
 
 	struct sockaddr_in serv_addr, cli_addr;
 	bzero((char *) &serv_addr, sizeof(serv_addr));
@@ -138,8 +155,6 @@ void TCPServer::bind(int port) {
 	if (::bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) throw "ERROR on binding";
 	listen(sockfd,1024);
 
-	int one = 1;
-	setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
 
 	this->port = port;
 }

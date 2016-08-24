@@ -28,6 +28,14 @@ EndPoint* get_endpoint(const char* name) {
 	return NULL;
 }
 
+EndPoint* request_endpoint(const char* name) {
+	EndPoint* ep = get_endpoint(name);
+	if(ep) return ep;
+	ep = new EndPoint(name);
+	ep->bRequested = true;
+	return ep;
+}
+
 bool is_transport_offered(const char* channel, const char* transportDescription) {
 	EndPoint* ep = get_endpoint(channel);
 	if(!ep) return false;
@@ -44,7 +52,7 @@ TransportDescription find_matching_transport(const char* channel, const char* tr
 
 // EndPoint
 
-EndPoint::EndPoint(const char* name, DataCallback cb) {
+EndPoint::EndPoint(const char* name, DataCallback cb) : bRequested(false) {
 	init();
 	if(has_endpoint(name)) fprintf(stderr, "[WARNING] Channel already published : %s\n", name);
 	this->name = name;
@@ -62,6 +70,14 @@ EndPoint::~EndPoint() {
 	for(Server* s : servers) s->close();
 }
 
+void EndPoint::realize() {
+	if(!bRequested) return;
+	bRequested = false;
+
+	for(SubscriptionRequest r : requested_subscriptions) {
+		subscribe(r.first.c_str(), r.second);
+	}
+}
 
 
 void EndPoint::offer_transport(const char* transportDescription) {
@@ -81,12 +97,20 @@ void EndPoint::offer_transport(const char* transportDescription) {
 }
 
 void EndPoint::subscribe(const char* transportDescription, DataCallback cb) {
+	if(bRequested) {
+		requested_subscriptions.push_back(SubscriptionRequest(transportDescription, cb));
+		return;
+	}
+
 	TransportDescription td = find_matching_transport(transportDescription);
 	if(!td) throw "Transport not offered";
 
 	Client* c = td.create_client();
 	c->cb = cb;
-	c->on_close = [&]()->void { vector_remove(clients, c); delete c; };
+	c->on_close = [&]()->void {
+		vector_remove(clients, c);
+		// delete c;
+	};
 	clients.push_back(c);
 }
 
@@ -122,11 +146,11 @@ bool EndPoint::on_remote_offered_transport(TransportDescription td) {
 // Debug
 
 void dump_endpoints() {
-	DBG_4("\n\nDump endpoints\n------------------\n");
+	printf("\n\nDump endpoints\n------------------\n");
 	for(EndPoint* ep : endpoints) {
-		DBG_4(" - %d : %s (%lu transports offered, %lu c, %lu s)\n", ep->fd, ep->name.c_str(), ep->offeredTransports.size(), ep->clients.size(), ep->servers.size());
+		printf(" - %d : %s (%lu transports offered, %lu c, %lu s)\n", ep->fd, ep->name.c_str(), ep->offeredTransports.size(), ep->clients.size(), ep->servers.size());
 	}
-	DBG_4("----------------\n\n");
+	printf("----------------\n\n");
 }
 
 }

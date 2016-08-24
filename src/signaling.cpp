@@ -47,9 +47,12 @@ void SignalingServer::connect(const char* url) {
 
 	DBG_2("[signaling] Connect to %s:%u\n", ip.c_str(), port);
 	SignalingClient* c = new SignalingClient(this, ip.c_str(), port);
-	c->on_close = [&]() { vector_remove(signalingClients, c); };
+	c->on_close = [&]() {
+		vector_remove(signalingClients, c);
+	};
 	states[c] = 0;
 	signalingClients.push_back(c);
+	c->wait_connected();
 }
 
 void SignalingServer::broadcast(const char* msg) {
@@ -92,6 +95,8 @@ void SignalingServer::on_receive(TCPSocket* connection, char* buf, size_t len) {
 			DBG_2("[signaling] Transport \"%s\" offered for channel \"%s\"\n", td.to_string().c_str(), ep->name.c_str());
 			broadcast_published_channels();
 		}
+
+		ep->realize();
 	}
 	else if(buf[0] == 'C') {
 		// Remote host committed a change

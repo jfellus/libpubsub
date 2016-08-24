@@ -32,14 +32,14 @@ void offer_transport(const char* channel, const char* transportDescription) {
 }
 
 int subscribe_in(const char* channel, const char* transportDescription, DataCallback cb) {
-	EndPoint* ep = get_endpoint(channel);
+	EndPoint* ep = request_endpoint(channel);
 	if(!ep) throw "Channel not found";
 	ep->subscribe(transportDescription, cb);
 	return ep->fd;
 }
 
 int subscribe_out(const char* channel, const char* transportDescription) {
-	EndPoint* ep = get_endpoint(channel);
+	EndPoint* ep = request_endpoint(channel);
 	if(!ep) throw "Channel not found";
 	ep->subscribe(transportDescription);
 	return ep->fd;

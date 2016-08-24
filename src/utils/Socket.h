@@ -22,6 +22,7 @@
 #include <arpa/inet.h>
 #include <functional>
 #include <utility>
+#include <semaphore.h>
 
 class TCPSocket;
 
@@ -60,6 +61,8 @@ public:
 	struct sockaddr_in serv_addr;
 	bool bStop;
 	pthread_mutex_t mut;
+	bool isClient;
+	sem_t semConnected;
 
 	std::function<void()> on_close;
 
@@ -68,12 +71,13 @@ public:
 	TCPSocket(int fd, const char* ip, int port);
 	virtual ~TCPSocket();
 
+	void wait_connected();
 	void close();
 
 	virtual void on_receive(char* buf, size_t len) = 0;
 
-	void write(const char* buf) { write(buf, strlen(buf)+1); }
-	void write(const char* buf, size_t len);
+	bool write(const char* buf) { return write(buf, strlen(buf)+1); }
+	bool write(const char* buf, size_t len);
 
 protected:
 	void run();

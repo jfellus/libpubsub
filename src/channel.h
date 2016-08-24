@@ -10,6 +10,7 @@
 
 #include <vector>
 #include <string>
+#include <list>
 
 #include "libpubsub.h"
 #include "protocols/protocols.h"
@@ -18,6 +19,8 @@
 using namespace std;
 
 namespace pubsub {
+
+typedef std::pair<string, DataCallback> SubscriptionRequest;
 
 /**
  * An EndPoint holds the declaration of a channel (local or remote) with a given name
@@ -35,6 +38,10 @@ public:
 	vector<Server*> servers;
 	vector<Client*> clients;
 
+	list<SubscriptionRequest> requested_subscriptions;
+
+	bool bRequested;
+
 public:
 	EndPoint(const char* name, DataCallback cb = 0);
 	virtual ~EndPoint();
@@ -46,6 +53,7 @@ public:
 	bool is_transport_offered(const char* transportDescription);
 	TransportDescription find_matching_transport(const char* transportDescription);
 	bool on_remote_offered_transport(TransportDescription td);
+	void realize();
 
 	void subscribe(const char* transportDescription, DataCallback cb = 0);
 
@@ -59,6 +67,7 @@ public:
 
 bool has_endpoint(const char* name);
 EndPoint* get_endpoint(const char* name);
+EndPoint* request_endpoint(const char* name);
 bool is_transport_offered(const char* channel, const char* transportDescription);
 TransportDescription find_matching_transport(const char* channel, const char* transportDescription);
 void close_all_endpoints();
