@@ -44,7 +44,7 @@ bool is_transport_offered(const char* channel, const char* transportDescription)
 
 TransportDescription find_matching_transport(const char* channel, const char* transportDescription) {
 	EndPoint* ep = get_endpoint(channel);
-	if(!ep) return INVALID_TRANSPORT_DESCRIPTION;
+	if(!ep) return INVALID_TRANSPORT_DESCRIPTION("?");
 	return ep->find_matching_transport(transportDescription);
 }
 
@@ -81,7 +81,7 @@ void EndPoint::realize() {
 
 
 void EndPoint::offer_transport(const char* transportDescription) {
-	TransportDescription td(transportDescription);
+	TransportDescription td(name, transportDescription);
 	if(!td) throw "Can't parse transport description";
 
 	Server* s = td.create_server();
@@ -121,11 +121,11 @@ void EndPoint::send(const char* buf, size_t len) {
 
 
 TransportDescription EndPoint::find_matching_transport(const char* transportDescription) {
-	TransportDescription td(transportDescription);
+	TransportDescription td(name, transportDescription);
 	for(TransportDescription t : offeredTransports) {
 		if(t.protocol == td.protocol) return t;
 	}
-	return INVALID_TRANSPORT_DESCRIPTION;
+	return INVALID_TRANSPORT_DESCRIPTION(name);
 }
 
 bool EndPoint::is_transport_offered(const char* transportDescription) {

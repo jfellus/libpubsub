@@ -5,13 +5,13 @@ HEADERS:=$(shell find src -name "*.h")
 
 all: libpubsub.so publish subscribe throughput examples
 
-examples: example1 example2 example3 example4
+examples: example1 example2 example3 example4 example5
 
 example%: test/example%.o
 	g++ -g -pthread -o $@ $< -L.. -L. -lpubsub -Wl,-rpath=. -Wl,-rpath=..
 
 libpubsub.so: $(OBJECTS)
-	g++ -g -pthread -shared -o $@ $^ -std=c++11
+	g++ -g -pthread -shared -o $@ $^ -std=c++11 -lrt
 
 publish: bin/bin/publish.o
 	g++ -g -pthread -o $@ $< -L.. -L. -lpubsub -Wl,-rpath=. -Wl,-rpath=..

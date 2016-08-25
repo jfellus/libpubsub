@@ -88,7 +88,7 @@ void SignalingServer::on_receive(TCPSocket* connection, char* buf, size_t len) {
 		EndPoint* ep = get_endpoint(endpoint.c_str());
 		if(!ep) ep = new EndPoint(endpoint.c_str());
 
-		TransportDescription td(transportDescription);
+		TransportDescription td(ep->name, transportDescription);
 		td.ip = connection->ip;
 
 		if(ep->on_remote_offered_transport(td)) {

@@ -7,6 +7,7 @@
 
 #include "protocols.h"
 #include "tcp.h"
+#include "shm.h"
 
 namespace pubsub {
 
@@ -20,11 +21,13 @@ namespace pubsub {
 
 Client* TransportDescription::create_client() {
 	if(protocol == "tcp") return new ClientTCP(ip.c_str(), port);
+	else if(protocol == "shm") return new ClientSHM(channel.c_str());
 	return NULL;
 }
 
 Server* TransportDescription::create_server() {
 	if(protocol == "tcp") return new ServerTCP(port);
+	else if(protocol == "shm") return new ServerSHM(channel.c_str(), port);
 	return NULL;
 }
 

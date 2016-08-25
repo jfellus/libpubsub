@@ -26,7 +26,7 @@ class Client;
 class Server;
 
 
-#define INVALID_TRANSPORT_DESCRIPTION TransportDescription()
+#define INVALID_TRANSPORT_DESCRIPTION(channel) TransportDescription(channel)
 
 
 /** TransportDescriptions contains information on a specific transport protocol for a particular channel */
@@ -37,10 +37,12 @@ public:
 	bool local;
 	string ip;
 	int port;
+	string channel;
 
 	/** Parse a TransportDescription string of the form "protocol://address[:port]"
 	 *   (e.g., "tcp://0.0.0.0:1234") */
-	TransportDescription(string desc) {
+	TransportDescription(const std::string& channel, string desc) {
+		this->channel = channel;
 		protocol = str_to_lower(str_before(desc, "://"));
 		string url = str_after(desc, "://");
 		ip = str_before(url, ":");
@@ -53,7 +55,7 @@ public:
 		valid = true;
 	}
 
-	TransportDescription() { valid = false; port = 0; local = false; }
+	TransportDescription(const std::string& channel) { this->channel = channel; valid = false; port = 0; local = false; }
 
 	operator bool() { return valid; }
 
