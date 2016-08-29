@@ -27,7 +27,7 @@ private:
 	std::thread thread;
 
 public:
-	SHMClient(const char* name);
+	SHMClient(const char* name, bool isInput = false);
 	virtual ~SHMClient();
 
 	void scan_infos(const char* str, ...);
@@ -53,9 +53,10 @@ private:
 	sem_t *semRead, *semWrite;
 	bool bStop;
 	std::thread thread;
+	int* nbClients;
 
 public:
-	SHMServer(const char* name, size_t bufsize);
+	SHMServer(const char* name, bool isInput, size_t bufsize);
 	virtual ~SHMServer();
 
 	void print_infos(const char* str, ...);

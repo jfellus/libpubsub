@@ -21,6 +21,7 @@ namespace pubsub {
 
 #define TRANSPORT_TCP 0
 
+typedef enum { INPUT, OUTPUT, BOTH } EndPointType;
 
 class Client;
 class Server;
@@ -38,6 +39,7 @@ public:
 	string ip;
 	int port;
 	string channel;
+	EndPointType type;
 
 	/** Parse a TransportDescription string of the form "protocol://address[:port]"
 	 *   (e.g., "tcp://0.0.0.0:1234") */
@@ -45,9 +47,14 @@ public:
 		this->channel = channel;
 		protocol = str_to_lower(str_before(desc, "://"));
 		string url = str_after(desc, "://");
-		ip = str_before(url, ":");
+		ip = str_before(str_before(url, ":"), "/");
 		if(str_has(url, ":")) port = atoi(str_after(url, ":").c_str());
 		else port = 0;
+
+		string details = str_after(url, "/");
+		if(str_has(details, "in")) type = INPUT;
+		else if(str_has(details, "out")) type = OUTPUT;
+		else type = BOTH;
 
 		local = (protocol == "shm");
 		if(!local && ip=="") ip = "localhost";
@@ -55,14 +62,17 @@ public:
 		valid = true;
 	}
 
-	TransportDescription(const std::string& channel) { this->channel = channel; valid = false; port = 0; local = false; }
+	TransportDescription(const std::string& channel) { this->channel = channel; valid = false; port = 0; local = false; type = BOTH; }
 
 	operator bool() { return valid; }
 
 	string to_string() {
 		if(!valid) return "";
-		if(port) return TOSTRING(protocol << "://" << ip << ":" << port);
-		else return TOSTRING(protocol << "://" << ip);
+		ostringstream ss;
+		ss << protocol << "://" << ip;
+		if(port) ss << ":" << port;
+		if(type!=BOTH) ss << (type == INPUT ? "/input" : "/output");
+		return ss.str();
 	}
 
 	Client* create_client();

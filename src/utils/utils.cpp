@@ -33,13 +33,13 @@ bool str_starts_with(const std::string& s, const std::string& prefix) {
 }
 
 std::string str_after(const std::string& s, const std::string& prefix) {
-	uint i = s.find(prefix);
+	auto i = s.find(prefix);
 	if(i==std::string::npos) return s;
 	return s.substr(i+prefix.length());
 }
 
 std::string str_before(const std::string& s, const std::string& suffix) {
-	uint i = s.find(suffix);
+	auto i = s.find(suffix);
 	if(i==std::string::npos) return s;
 	return s.substr(0,i);
 }

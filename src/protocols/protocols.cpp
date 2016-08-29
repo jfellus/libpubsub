@@ -21,13 +21,13 @@ namespace pubsub {
 
 Client* TransportDescription::create_client() {
 	if(protocol == "tcp") return new ClientTCP(ip.c_str(), port);
-	else if(protocol == "shm") return new ClientSHM(channel.c_str());
+	else if(protocol == "shm") return new ClientSHM(channel.c_str(), type==OUTPUT);
 	return NULL;
 }
 
 Server* TransportDescription::create_server() {
 	if(protocol == "tcp") return new ServerTCP(port);
-	else if(protocol == "shm") return new ServerSHM(channel.c_str(), port);
+	else if(protocol == "shm") return new ServerSHM(channel.c_str(), type==INPUT, port);
 	return NULL;
 }
 

@@ -13,7 +13,7 @@ namespace pubsub {
 
 class ServerSHM: public SHMServer, public Server {
 public:
-	ServerSHM(const char* name, size_t bufsize) : SHMServer(name, bufsize) {}
+	ServerSHM(const char* name, bool isInput, size_t bufsize) : SHMServer(name, isInput, bufsize) {}
 	virtual ~ServerSHM() {}
 
 	virtual void send(const char* buf, size_t len) { write(buf, len); }
@@ -23,7 +23,7 @@ public:
 
 class ClientSHM : public Client, public SHMClient {
 public:
-	ClientSHM(const char* name) : SHMClient(name) {}
+	ClientSHM(const char* name, bool isInput) : SHMClient(name, isInput) {}
 	virtual ~ClientSHM() {}
 
 	virtual void send(const char* buf, size_t len) { write(buf, len); }

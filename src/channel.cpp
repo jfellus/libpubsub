@@ -52,12 +52,13 @@ TransportDescription find_matching_transport(const char* channel, const char* tr
 
 // EndPoint
 
-EndPoint::EndPoint(const char* name, DataCallback cb) : bRequested(false) {
+EndPoint::EndPoint(const char* name, EndPointType type, DataCallback cb) : bRequested(false) {
 	init();
 	if(has_endpoint(name)) fprintf(stderr, "[WARNING] Channel already published : %s\n", name);
 	this->name = name;
 	this->fd = endpoints.size();
 	this->cb = cb;
+	this->type = type;
 
 	endpoints.push_back(this);
 	broadcast_published_channels();
@@ -83,6 +84,7 @@ void EndPoint::realize() {
 void EndPoint::offer_transport(const char* transportDescription) {
 	TransportDescription td(name, transportDescription);
 	if(!td) throw "Can't parse transport description";
+	td.type = type;
 
 	Server* s = td.create_server();
 	s->cb = cb;
@@ -120,10 +122,14 @@ void EndPoint::send(const char* buf, size_t len) {
 }
 
 
+static bool are_endpoint_type_comptabible(EndPointType t1, EndPointType t2) {
+	return t1 == BOTH || (t1 == INPUT && t2 == OUTPUT) || (t1 == OUTPUT && t2 == INPUT);
+}
+
 TransportDescription EndPoint::find_matching_transport(const char* transportDescription) {
 	TransportDescription td(name, transportDescription);
 	for(TransportDescription t : offeredTransports) {
-		if(t.protocol == td.protocol) return t;
+		if(t.protocol == td.protocol && are_endpoint_type_comptabible(t.type, td.type)) return t;
 	}
 	return INVALID_TRANSPORT_DESCRIPTION(name);
 }

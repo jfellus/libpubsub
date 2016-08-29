@@ -15,10 +15,10 @@
 #include "libpubsub.h"
 #include "protocols/protocols.h"
 
-
 using namespace std;
 
 namespace pubsub {
+
 
 typedef std::pair<string, DataCallback> SubscriptionRequest;
 
@@ -30,6 +30,8 @@ typedef std::pair<string, DataCallback> SubscriptionRequest;
 class EndPoint {
 public:
 	string name;
+	EndPointType type;
+
 	int fd;
 
 	DataCallback cb;
@@ -43,11 +45,12 @@ public:
 	bool bRequested;
 
 public:
-	EndPoint(const char* name, DataCallback cb = 0);
+	EndPoint(const char* name, EndPointType type = BOTH, DataCallback cb = 0);
 	virtual ~EndPoint();
 
-	bool is_input() { return cb; }
-	bool is_output() { return !cb; }
+	bool is_input() { return type == INPUT; }
+	bool is_output() { return type == OUTPUT; }
+	bool is_duplex() { return type == BOTH; }
 
 	void offer_transport(const char* transportDescription);
 	bool is_transport_offered(const char* transportDescription);

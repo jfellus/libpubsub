@@ -19,14 +19,14 @@ namespace pubsub {
 
 // SHMServer
 
-SHMServer::SHMServer(const char* name, size_t bufsize) {
+SHMServer::SHMServer(const char* name, bool isInput, size_t bufsize) {
 	this->name = name;
 	this->bufsize = bufsize;
 	print_infos("%lu", bufsize);
 
 	fd = shm_open(SSTR("/" << name), O_CREAT | O_RDWR | O_TRUNC, 0666);
-	ftruncate(fd, bufsize);
-	ptr = mmap(0, bufsize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+	ftruncate(fd, bufsize + sizeof(int));
+	ptr = mmap(0, bufsize + sizeof(int), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 	if (ptr == MAP_FAILED) { close(fd); throw("mmap"); }
 
 	sem_unlink(SSTR("/semread_" << name));
@@ -35,10 +35,14 @@ SHMServer::SHMServer(const char* name, size_t bufsize) {
 	semWrite = sem_open(SSTR("/semwrite_" << name), O_CREAT, S_IRUSR | S_IWUSR, 0);
 	sem_post(semWrite);
 
-	bStop = false;
-//	thread = std::thread([&]() {
-//		while(!bStop) { read(); }
-//	});
+	nbClients = (int*)&((char*)ptr)[bufsize];
+
+	if(isInput) {
+		bStop = false;
+		thread = std::thread([&]() {
+			while(!bStop) { read(); }
+		});
+	}
 }
 
 SHMServer::~SHMServer() {
@@ -89,7 +93,7 @@ void SHMServer::read(char* buf, size_t len) {
 
 // SHMClient
 
-SHMClient::SHMClient(const char* name) {
+SHMClient::SHMClient(const char* name, bool isInput) {
 	this->name = name;
 	scan_infos("%lu", &bufsize);
 
@@ -101,9 +105,12 @@ SHMClient::SHMClient(const char* name) {
 	semWrite = sem_open(SSTR("/semwrite_" << name), O_CREAT, S_IRUSR | S_IWUSR, 1);
 
 	bStop = false;
-	thread = std::thread([&]() {
-		while(!bStop) { read(); }
-	});
+
+	if(isInput) {
+		thread = std::thread([&]() {
+			while(!bStop) { read(); }
+		});
+	}
 }
 
 SHMClient::~SHMClient() {
