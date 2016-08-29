@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <sys/time.h>
 #include <thread>
+#include <utils/utils.h>
 
 ////////////////////////////////////////////////////////////////
 //                                                            //
@@ -16,7 +17,7 @@
 ////////////////////////////////////////////////////////////////
 
 
-int BUFSIZE = 100000000;
+int BUFSIZE = 1000000;
 
 int USAGE() {
 	fprintf(stderr, "USAGE : throughput <in|out [bufsize]>\n");
@@ -49,7 +50,7 @@ void publish_in(const char* channel) {
 		bytes += len;
 		msg++;
 	});
-	pubsub::offer_transport(channel, "shm://localhost:100000000");
+	pubsub::offer_transport(channel, SSTR("shm://localhost:" << BUFSIZE));
 	getchar();
 }
 
