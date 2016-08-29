@@ -86,6 +86,7 @@ void EndPoint::offer_transport(const char* transportDescription) {
 	if(!td) throw "Can't parse transport description";
 	td.type = type;
 
+
 	Server* s = td.create_server();
 	s->cb = cb;
 	servers.push_back(s);

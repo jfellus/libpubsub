@@ -46,7 +46,7 @@ void B() {
 	// PEER B : SUBSCRIBER
 
 	// Connect to the publisher's host
-	add_host("localhost:12212");
+	add_host("10.20.57.151");
 
 	// Subscribe to 'prout' using any available TCP transport
 	int fd = subscribe_out("prout", "tcp://");
