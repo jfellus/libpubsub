@@ -1,0 +1,113 @@
+
+<html>
+<body>
+	<div id="prout"></div>
+</body>
+</html>
+<script>
+
+	function EndPoint(channel) {
+		this.channel = channel;
+		this.transports = [];
+	};
+
+	EndPoint.prototype.has_transport = function(transport) {
+		return this.transports.filter(function(t) {return (t.protocol + "://" + t.uri) === transport; }).length > 0;
+	};
+
+	EndPoint.prototype.add_transport = function(transport) {
+		if(this.has_transport(transport)) return false;
+		var protocol = transport.split("://")[0];
+		var uri = transport.split("://")[1];
+		this.transports.push({protocol:protocol,uri:uri});
+	};
+
+	EndPoint.prototype.get_transport = function(protocol) {
+		return this.transports.filter(function(t) { return t.protocol === protocol; })[0];
+	};
+
+
+	function Subscription(channel, cb) {
+		this.channel = channel;
+		this.cb = cb;
+
+		PubSub.realize_subscriptions();
+	};
+	Subscription.prototype.send = function(buf) {
+
+	};
+
+
+
+	var PubSub = {
+		commitId: -1,
+		endpoints: [],
+		_subscriptions: [],
+
+		add_endpoint: function(channel) {
+			var ep = this.get_endpoint(channel);
+			if(ep) return ep;
+			ep = new EndPoint(channel);
+			this.endpoints.push(ep);
+			return ep;
+		},
+		get_endpoint: function(channel) {
+			return this.endpoints.filter(function(x) { return channel == x.channel; })[0];
+		},
+
+		on_change: function() {
+			this.dump();
+			this.realize_subscriptions();
+		},
+
+		dump: function() { console.log(this);	},
+
+		add_host: function(ip) {
+			console.error("todo");
+		},
+
+		subscribe: function(channel, cb) {
+			var s = new Subscription(channel, cb);
+			this._subscriptions.push(s);
+			return s;
+		},
+
+		realize_subscriptions: function() {
+			console.log(this);
+			var that = this;
+			this._subscriptions.forEach(function(s) {
+				if(s.connection) return;
+				var ep = that.get_endpoint(s.channel);
+				if(!ep) return;
+				var tp = ep.get_transport("rtc");
+				if(!tp) return; 
+				console.log("Connect RTC to " + tp.uri + " for channel " + ep.channel);
+				s.connection = "prout todo"; // TODO
+			});
+		}
+
+	};
+
+
+	var ws = new WebSocket("ws://localhost:12312", "pub-sub");
+	ws.onmessage = function(msg) {
+		var type = msg.data[0];
+		var details = msg.data.substr(1);
+		if(type == 'E') {
+			PubSub.add_endpoint(details);
+		} else if(type == 'T') {
+			var channel = details.split('=')[0];
+			var transport = details.split('=')[1];
+			var ep = PubSub.add_endpoint(channel);
+			ep.add_transport(transport);
+		} else if(type == 'C') {
+			PubSub.commitId = parseInt(details);
+			PubSub.on_change();
+		}
+	};
+
+
+
+	var s = PubSub.subscribe("prout");
+
+</script>

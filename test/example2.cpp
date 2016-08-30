@@ -30,6 +30,7 @@ void A() {
 
 	// Offer a TCP transport for this channel
 	offer_transport("prout", "tcp://:12000");
+	offer_transport("prout", "rtc://:12322");
 
 	for(;;) sleep(1);
 

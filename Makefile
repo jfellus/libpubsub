@@ -11,7 +11,7 @@ example%: test/example%.o
 	g++ -g -pthread -o $@ $< -L.. -L. -lpubsub -Wl,-rpath=. -Wl,-rpath=..
 
 libpubsub.so: $(OBJECTS)
-	g++ -g -pthread -shared -o $@ $^ -std=c++11 -lrt
+	g++ -g -pthread -shared -o $@ $^ -std=c++11 -lrt -lwebsockets
 
 publish: bin/bin/publish.o
 	g++ -g -pthread -o $@ $< -L.. -L. -lpubsub -Wl,-rpath=. -Wl,-rpath=..

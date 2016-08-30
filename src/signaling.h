@@ -9,6 +9,7 @@
 #define SRC_SIGNALING_H_
 
 #include "utils/utils.h"
+#include "utils/websocket.h"
 #include "utils/Socket.h"
 #include <map>
 #include <semaphore.h>
@@ -16,9 +17,11 @@
 namespace pubsub {
 
 #define SIGNALING_PORT 12212
+#define SIGNALING_WEBSOCKET_PORT 12312
 
 
 class SignalingClient;
+class SignalingWebsocketServer;
 
 /**
  * A signaling TCP server that broadcast channel declarations between a set of hosts (peers).
@@ -27,6 +30,8 @@ class SignalingClient;
  */
 class SignalingServer : public TCPServer {
 private:
+	SignalingWebsocketServer* websocketServer;
+
 	std::vector<SignalingClient*> signalingClients;
 	std::map<TCPSocket*,int> states;
 
@@ -71,6 +76,24 @@ public:
 		server->on_receive(this, buf, len);
 	}
 
+};
+
+
+class SignalingWebsocketPeer : public IWebSocketPeer {
+public:
+	SignalingWebsocketPeer(struct libwebsocket *ws);
+
+	virtual ~SignalingWebsocketPeer() {}
+
+	virtual void onMessage(char* msg) {
+		printf("MSG (%lu) : %s\n", (long)this, msg);
+	}
+};
+
+class SignalingWebsocketServer : public IWebSocketServer {
+public:
+	SignalingWebsocketServer() : IWebSocketServer(SIGNALING_WEBSOCKET_PORT) {}
+	virtual IWebSocketPeer* createPeer(struct libwebsocket *ws) { return new SignalingWebsocketPeer(ws); }
 };
 
 

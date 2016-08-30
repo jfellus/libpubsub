@@ -15,7 +15,8 @@ using namespace std;
 namespace pubsub {
 
 SignalingServer* signalingServer = NULL;
-
+extern vector<string> hosts;
+extern vector<EndPoint*> endpoints;
 
 
 // SignalingServer
@@ -23,11 +24,15 @@ SignalingServer* signalingServer = NULL;
 SignalingServer::SignalingServer() : TCPServer(SIGNALING_PORT, SIGNALING_PORT+64) {
 	DBG_2("[signaling] Initialize signaling server on port %u\n", port);
 
+	websocketServer = new SignalingWebsocketServer();
+	websocketServer->start();
+
 	localCommit = 0;
 	sem_init(&semStates,0,0);
 }
 
 SignalingServer::~SignalingServer() {
+	websocketServer->close();
 	close();
 }
 
@@ -129,6 +134,22 @@ void SignalingServer::dump() {
 	for(TCPSocket* c : signalingClients) DBG_3(" - %s:%u (cl)\n", c->ip.c_str(), c->port);
 }
 
+
+
+SignalingWebsocketPeer::SignalingWebsocketPeer(struct libwebsocket *ws) : IWebSocketPeer(ws) {
+	for(string h : hosts) {
+		send(SSTR( "H" << h ));
+	}
+
+	for(EndPoint* ep : endpoints) {
+		send(SSTR( "E" << ep->name));
+		for(TransportDescription td : ep->offeredTransports) {
+			send(SSTR( "T" << ep->name << "=" << td.to_string()));
+		}
+	}
+
+	send(SSTR("C" << signalingServer->localCommit));
+}
 
 
 

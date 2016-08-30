@@ -18,7 +18,7 @@ namespace pubsub {
 
 // Channels <-> Hosts mapping
 
-static vector<string> hosts;
+vector<string> hosts;
 extern SignalingServer* signalingServer;
 extern vector<EndPoint*> endpoints;
 

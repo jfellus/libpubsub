@@ -9,6 +9,8 @@
 #include "tcp.h"
 #include "shm.h"
 #include "pipe.h"
+#include "rtc.h"
+
 
 namespace pubsub {
 
@@ -24,6 +26,7 @@ Client* TransportDescription::create_client() {
 	if(protocol == "tcp") return new ClientTCP(ip.c_str(), port);
 	else if(protocol == "shm") return new ClientSHM(channel.c_str(), type==OUTPUT);
 	else if(protocol == "pipe") return new ClientPipe(channel.c_str(), type==OUTPUT, port);
+	else if(protocol == "rtc") return new ClientRTC(channel.c_str(), type==OUTPUT, port);
 	return NULL;
 }
 
@@ -31,6 +34,7 @@ Server* TransportDescription::create_server() {
 	if(protocol == "tcp") return new ServerTCP(port);
 	else if(protocol == "shm") return new ServerSHM(channel.c_str(), type==INPUT, port);
 	else if(protocol == "pipe") return new ServerPipe(channel.c_str(), type==INPUT, port);
+	else if(protocol == "rtc") return new ServerRTC(channel.c_str(), type==INPUT, port);
 	return NULL;
 }
 
