@@ -5,7 +5,7 @@ HEADERS:=$(shell find src -name "*.h")
 
 CXX:=g++
 
-all: libpubsub.so publish subscribe throughput throughput_shm throughput_pipe examples
+all: libpubsub.so publish subscribe throughput throughput_shm throughput_pipe pubsub_dump examples
 
 examples: example1 example2 example3 example4 example5 example6
 
@@ -19,6 +19,9 @@ publish: bin/bin/publish.o
 	$(CXX) -g -pthread -o $@ $< -L.. -L. -lpubsub -Wl,-rpath=. -Wl,-rpath=..
 
 subscribe: bin/bin/subscribe.o
+	$(CXX) -g -pthread -o $@ $< -L.. -L. -lpubsub -Wl,-rpath=. -Wl,-rpath=..
+
+pubsub_dump: bin/bin/pubsub_dump.o
 	$(CXX) -g -pthread -o $@ $< -L.. -L. -lpubsub -Wl,-rpath=. -Wl,-rpath=..
 
 throughput: bin/bin/throughput.o
@@ -43,6 +46,7 @@ clean:
 install:
 	cp -f publish /usr/bin
 	cp -f subscribe /usr/bin
+	cp -f pubsub_dump /usr/bin
 	cp -f libpubsub.so /usr/lib
 	cp -f src/libpubsub.h /usr/include
 

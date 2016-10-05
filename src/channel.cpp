@@ -19,7 +19,7 @@ vector<EndPoint*> endpoints; // The global list of all declared endpoints
 // Public API
 
 bool has_endpoint(const char* name) {
-	for(EndPoint* c : endpoints) if(c->name == name) return true;
+	for(EndPoint* c : endpoints) if(c->name == name && !c->bRequested) return true;
 	return false;
 }
 
@@ -110,6 +110,7 @@ void EndPoint::subscribe(const char* transportDescription, DataCallback cb) {
 	Client* c = td.create_client();
 	c->cb = cb;
 	c->on_close = [&]()->void {
+		bRequested = true;
 		vector_remove(clients, c);
 	};
 	clients.push_back(c);

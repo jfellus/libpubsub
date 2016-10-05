@@ -61,6 +61,7 @@ void broadcast_published_channels() {
 	}
 
 	for(EndPoint* ep : endpoints) {
+		if(ep->bRequested) continue;
 		signalingServer->broadcast(SSTR( "E" << ep->name));
 		for(TransportDescription td : ep->offeredTransports) {
 			signalingServer->broadcast(SSTR( "T" << ep->name << "=" << td.to_string()));
@@ -68,6 +69,21 @@ void broadcast_published_channels() {
 	}
 
 	signalingServer->broadcast(SSTR("C" << signalingServer->localCommit));
+}
+
+void dump_published_channels() {
+	for(string h : hosts) {
+		puts(SSTR( "H" << h ));
+	}
+
+	for(EndPoint* ep : endpoints) {
+		puts(SSTR( "E" << ep->name << (ep->bRequested ? " (requested)" : "")));
+		for(TransportDescription td : ep->offeredTransports) {
+			puts(SSTR( "T" << ep->name << "=" << td.to_string()));
+		}
+	}
+
+	puts(SSTR("C" << signalingServer->localCommit));
 }
 
 bool has_host(const char* url) {

@@ -33,7 +33,7 @@ inline void send(int fd, const char* buf) { send(fd, buf, strlen(buf)); }
 
 
 void add_host(const char* url);
-
+void dump_published_channels();
 
 }
 
