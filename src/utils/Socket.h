@@ -63,6 +63,7 @@ public:
 	pthread_mutex_t mut;
 	bool isClient;
 	sem_t semConnected;
+	bool bReconnect;
 
 	std::function<void()> on_close;
 
@@ -70,6 +71,8 @@ public:
 	TCPSocket(const char* ip, int port);
 	TCPSocket(int fd, const char* ip, int port);
 	virtual ~TCPSocket();
+
+	void reconnect();
 
 	void wait_connected();
 	void close();

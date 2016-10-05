@@ -92,6 +92,8 @@ public:
 	Client() : cb(0), on_close(0) {}
 	virtual ~Client() {}
 
+	virtual void reconnect() {}
+
 	virtual void close() {}
 
 	virtual void send(const char* buf, size_t len) = 0;

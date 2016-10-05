@@ -41,6 +41,7 @@ void A() {
 
 void B() {
 	try {
+
 	srand(time(NULL));
 	int ID = rand();
 

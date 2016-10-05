@@ -35,8 +35,9 @@ IWebSocketServer::IWebSocketServer(int port) {
 	info.gid = -1;
 	info.uid = -1;
 
+
 	context = libwebsocket_create_context(&info);
-	if (context == NULL) throw "Websocket context create error";
+	if (context == NULL) { fprintf(stderr, "Websocket context create error on port %d", port); exit(1); }
 }
 
 void IWebSocketServer::run() {
@@ -46,7 +47,9 @@ void IWebSocketServer::run() {
 }
 
 void IWebSocketServer::start() {
-	thread = std::thread([&]() { run(); });
+	thread = std::thread([&]() {
+		try { run(); } catch(const char* e) { fprintf(stderr, "ERROR : %s\n", e); exit(1); }
+	});
 }
 
 static int callback_websocket(struct libwebsocket_context *context, struct libwebsocket *ws, enum libwebsocket_callback_reasons reason, void *user, void *msg, size_t len) {

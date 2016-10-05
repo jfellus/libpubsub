@@ -3,3 +3,8 @@
 /test/*.o
 /example*
 .*
+/publish
+/subscribe
+/throughput
+/throughput_pipe
+/throughput_shm

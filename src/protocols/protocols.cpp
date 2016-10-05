@@ -14,6 +14,9 @@
 
 namespace pubsub {
 
+
+
+
 /////////////////////////////////////////////////////////////////////////
 //                                                                     //
 // This file contains the factory for Clients and Server               //
@@ -31,7 +34,7 @@ Client* TransportDescription::create_client() {
 }
 
 Server* TransportDescription::create_server() {
-	if(protocol == "tcp") return new ServerTCP(port);
+	if(protocol == "tcp") return new ServerTCP(port ? port : (port = get_free_port(10001, channel.c_str())));
 	else if(protocol == "shm") return new ServerSHM(channel.c_str(), type==INPUT, port);
 	else if(protocol == "pipe") return new ServerPipe(channel.c_str(), type==INPUT, port);
 	else if(protocol == "rtc") return new ServerRTC(channel.c_str(), type==INPUT, port);

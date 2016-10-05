@@ -86,7 +86,6 @@ void EndPoint::offer_transport(const char* transportDescription) {
 	if(!td) throw "Can't parse transport description";
 	td.type = type;
 
-
 	Server* s = td.create_server();
 	s->cb = cb;
 	servers.push_back(s);
@@ -112,7 +111,6 @@ void EndPoint::subscribe(const char* transportDescription, DataCallback cb) {
 	c->cb = cb;
 	c->on_close = [&]()->void {
 		vector_remove(clients, c);
-		// delete c;
 	};
 	clients.push_back(c);
 }

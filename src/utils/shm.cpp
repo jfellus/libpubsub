@@ -97,6 +97,7 @@ SHMClient::SHMClient(const char* name, bool isInput) {
 	this->name = name;
 	scan_infos("%lu", &bufsize);
 
+	if(!bufsize) { fprintf(stderr, "Unspecified size for shm channel %s\n", name); }
 	fd = shm_open(SSTR("/" << name), O_CREAT | O_RDWR, 0666);
 	ptr = mmap(0, bufsize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 	if (ptr == MAP_FAILED) { close(fd); throw("mmap"); }

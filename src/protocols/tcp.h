@@ -37,11 +37,38 @@ public:
 	}
 	virtual ~ClientTCP() {}
 
+	virtual void reconnect() { printf("reconnect\n"); }
+
+
 	virtual void send(const char* buf, size_t len) { write(buf, len); }
 
 	virtual void on_receive(char* buf, size_t len) { if(cb) cb(buf, len); }
 
 };
+
+
+
+// UTILS
+
+static int get_free_port(int firstPort, const char* channel) {
+	char path[512];
+	char _channel[512];
+	system("mkdir -p /tmp/.libpubsub/ports");
+	int i;
+	for(i = firstPort; ; i++) {
+		sprintf(path, "/tmp/.libpubsub/ports/%u", i);
+		FILE* f = fopen(path, "r");
+		if(!f) break;
+		fgets(_channel, 512, f);
+		if(!strcmp(_channel, channel)) { fclose(f); break; }
+		fclose(f);
+	}
+	FILE *f = fopen(path, "w");
+	fprintf(f, "%s", channel);
+	fclose(f);
+	return i;
+}
+
 
 
 }

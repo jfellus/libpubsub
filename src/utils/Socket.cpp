@@ -23,6 +23,7 @@
 
 TCPSocket::TCPSocket(const char* ip, int port) : mut(PTHREAD_MUTEX_INITIALIZER) {
 	sem_init(&semConnected, 0, 0);
+	bReconnect = true;
 	this->ip = ip;
 	this->port = port;
 	struct hostent * server = gethostbyname(ip);
@@ -43,6 +44,7 @@ TCPSocket::TCPSocket(const char* ip, int port) : mut(PTHREAD_MUTEX_INITIALIZER) 
 
 TCPSocket::TCPSocket(int fd, const char* ip, int port) {
 	sem_init(&semConnected, 0, 0);
+	bReconnect = true;
 	this->fd = fd;
 	this->ip = ip;
 	this->port = port;
@@ -56,31 +58,46 @@ TCPSocket::TCPSocket(int fd, const char* ip, int port) {
 void TCPSocket::run() {
 	bStop = false;
 	thread = std::thread([&](){
-
-		if(isClient) {
-			while (connect(fd,(const sockaddr*)&serv_addr,sizeof(serv_addr)) < 0) usleep(500000);
-			int one = 1;
-			setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
-		}
-		sem_post(&semConnected);
-
-		char buf[5024];
-
-		while(!bStop) {
-			int n = recv(fd,buf,5024, 0);
-			if (n <= 0) break;
-			buf[n] = 0;
-			int i;
-			for(i=0; i<n; i++) {
-//				printf("[tcp] <- %s\n", &buf[i]);
-				on_receive(&buf[i], n);
-				while(buf[i]) i++;
+		do {
+			if(isClient) {
+				while (connect(fd,(const sockaddr*)&serv_addr,sizeof(serv_addr)) < 0) usleep(500000);
+				int one = 1;
+				setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
 			}
-		}
-		::close(fd);
-		if(on_close) on_close();
+			sem_post(&semConnected);
+
+			char buf[5024];
+
+			while(!bStop) {
+				int n = recv(fd,buf,5024, 0);
+				if (n <= 0) break;
+				buf[n] = 0;
+				int i;
+				for(i=0; i<n; i++) {
+					//				printf("[tcp] <- %s\n", &buf[i]);
+					on_receive(&buf[i], n);
+					while(buf[i]) i++;
+				}
+			}
+			::close(fd);
+			if(on_close) on_close();
+			if(bReconnect && isClient) {
+				struct hostent * server = gethostbyname(ip.c_str());
+				if(!server) throw "Couldn't resolve host";
+				fd = socket(AF_INET, SOCK_STREAM, 0);
+				if (fd < 0) throw "ERROR opening socket";
+
+				bzero((char *) &serv_addr, sizeof(serv_addr));
+				serv_addr.sin_family = AF_INET;
+				bcopy((char *)server->h_addr, (char *)&serv_addr.sin_addr.s_addr, server->h_length);
+				serv_addr.sin_port = htons(port);
+
+				isClient = true;
+			}
+		} while(bReconnect && isClient);
 	});
 }
+
 
 
 TCPSocket::~TCPSocket() {
@@ -178,8 +195,8 @@ void TCPServer::run() {
 		socklen_t clilen = sizeof(cli_addr);
 		while(!bStop) {
 			int fd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
-			char *ip = inet_ntoa(cli_addr.sin_addr);
 			if (fd < 0) throw "ERROR on accept";
+			char *ip = inet_ntoa(cli_addr.sin_addr);
 
 			Connection* c = new Connection(this, fd, ip, cli_addr.sin_port);
 			c->on_close = [&]() { vector_remove(connections, (TCPSocket*)c); };

@@ -24,8 +24,9 @@ extern vector<EndPoint*> endpoints;
 SignalingServer::SignalingServer() : TCPServer(SIGNALING_PORT, SIGNALING_PORT+64) {
 	DBG_2("[signaling] Initialize signaling server on port %u\n", port);
 
-	websocketServer = new SignalingWebsocketServer();
-	websocketServer->start();
+	websocketServer = 0; // TODO
+//	websocketServer = new SignalingWebsocketServer();
+//	websocketServer->start();
 
 	localCommit = 0;
 	sem_init(&semStates,0,0);
