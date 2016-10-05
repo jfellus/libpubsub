@@ -6,7 +6,10 @@
  */
 
 #include "rtc.h"
+
+#ifdef USE_WEBRTC
 #include <webrtcpp.h>
+#endif
 
 namespace pubsub {
 
