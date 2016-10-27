@@ -13,74 +13,19 @@
 
 namespace pubsub {
 
-class Channel;
 static vector<Channel*> channels;
 
 
-class Channel {
-public:
-	string name;
-	Host* publisher;
-	bool bSubscribed;
-	bool bRequested;
+Channel::Channel(const string& name) : name(name) {
+	offeredPort = 0;
+	server = NULL;
+	publisher = NULL;
+	channels.push_back(this);
+}
 
-	Channel(const string& name) : name(name) {
-		bRequested = false;
-		bSubscribed = false;
-		publisher = NULL;
-		channels.push_back(this);
-	}
-
-	virtual ~Channel() {
-		vector_remove(channels, this);
-	}
-
-	void setPublisher(Host* p) {
-		if(publisher != p) disconnect();
-		publisher = p;
-		if(bRequested && publisher) connect();
-	}
-
-	void publish() {
-		setPublisher(Host::me());
-		Host::broadcast(TOSTRING("PUBLISH=" << tostring()));
-	}
-
-	void unpublish() {
-		setPublisher(NULL);
-		Host::broadcast(TOSTRING("UNPUBLISH=" << tostring()));
-	}
-
-	void subscribe() {
-		bRequested = true;
-		if(publisher) connect();
-	}
-
-	char getType() {
-		if(publisher == Host::me()) return 'P'; // Published
-		else if(bSubscribed) return 'S'; // Subscribed (connected)
-		else if(bRequested) return 'R'; // Requested (but not available)
-		else if(publisher) return 'A'; // Available
-		else return 'N'; // Not available
-	}
-
-	void connect() {
-		if(!publisher || !bRequested) return;
-		if(!bSubscribed) {
-			// TODO actually connect to publisher
-			bSubscribed = true;
-		}
-	}
-
-	void disconnect() {
-		// TODO actually disconnect from publisher
-		bSubscribed = false;
-	}
-
-	string tostring() {
-		return TOSTRING( getType() << name << "|" << (publisher ? publisher->tostring() : ""));
-	}
-};
+Channel::~Channel() {
+	vector_remove(channels, this);
+}
 
 
 Channel* get_channel(const string& name) {
@@ -128,7 +73,7 @@ void apply_publish_statement(Host* h, const string& statement) {
 	else if(type=='R' || type=='N') { }
 	else DBG("Wrong channel type...");
 
-	dump_channels();
+//	dump_channels();
 }
 
 void apply_unpublish_statement(Host* h, const string& statement) {
@@ -137,7 +82,7 @@ void apply_unpublish_statement(Host* h, const string& statement) {
 	Channel* c = get_channel(name);
 	if(c) c->setPublisher(NULL);
 
-	dump_channels();
+//	dump_channels();
 }
 
 
@@ -145,7 +90,7 @@ void close_all_channels(Host* h) {
 	for(Channel* c : channels) {
 		if(c->publisher == h) c->setPublisher(NULL);
 	}
-	dump_channels();
+//	dump_channels();
 }
 
 void broadcast_published_channels() {
@@ -155,18 +100,95 @@ void broadcast_published_channels() {
 }
 
 
-void subscribe_channel(const string& name) {
-	DBG("Subscribe " << name);
+Subscription* subscribe_channel(const string& name) {
+	DBG_2("Subscribe " << name);
 	Channel* c = get_or_create_channel(name);
-	c->subscribe();
-	dump_channels();
+	Subscription* s = c->subscribe();
+//	dump_channels();
+	return s;
 }
 
-void publish_channel(const string& name) {
-	DBG("Publish " << name);
+Channel* publish_channel(const string& name) {
+	DBG_2("Publish " << name);
 	Channel* c = get_or_create_channel(name);
 	c->publish();
-	dump_channels();
+//	dump_channels();
+	return c;
+}
+
+void make_offer(Host* h, const string& channel) {
+	Channel* c = get_channel(channel);
+	if(c) c->offer(h);
+	else DBG("No such channel : " << channel);
+}
+
+void answer_offer(Host* h, const string& offer) {
+	string channel = str_before(offer, "|");
+	string offered = str_after(offer, "|");
+	Channel* c = get_channel(channel);
+	if(c) c->on_offer(offered);
+	else DBG("No such channel : " << channel);
+}
+
+
+
+
+
+
+Subscription::Subscription(Channel* channel) : channel(channel) {
+	channel->subscriptions.push_back(this);
+	init();
+}
+
+Subscription::Subscription(Channel* channel, TCPSocket* socket) : channel(channel), socket(socket) {
+	port = 0;
+	channel->subscriptors.push_back(this);
+	socket->on_open = [&]() { on_open(); };
+	socket->on_close = [&]() { on_close(); };
+	socket->cbRecv = [&](const char* msg, size_t len) { if(channel->on_message) channel->on_message(msg,len); };
+	bConnected = true;
+}
+
+Subscription::~Subscription() {
+	vector_remove(channel->subscriptions, this);
+	vector_remove(channel->subscriptors, this);
+}
+
+void Subscription::init() {
+	socket = new TCPSocket();
+	socket->on_open = [&]() { on_open(); };
+	socket->on_close = [&]() { on_close(); };
+	socket->cbRecv = [&](const char* msg, size_t len) { if(on_message) on_message(msg, len); };
+	bConnected = false;
+}
+
+void Subscription::connect(int port) {
+	if(bConnected) return;
+	this->port = port;
+	bConnected = true;
+	socket->connect(channel->publisher->ip.c_str(), port);
+}
+
+void Subscription::close() {
+	socket->remove_listeners();
+	socket->close();
+	on_close();
+}
+
+void Subscription::on_open() {
+	DBG_3("Subscription open to " << channel->name);
+}
+
+void Subscription::on_close() {
+	bConnected = false;
+	socket->remove_listeners();
+	DBG_3("Subscription closed to " << channel->name);
+	if(!port) delete this;
+	else init();
+}
+
+void Subscription::write(const char* msg, size_t len) {
+	socket->write(msg, len);
 }
 
 

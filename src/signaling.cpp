@@ -25,6 +25,10 @@ void digest_message(Host* h, string& s) {
 		apply_publish_statement(h, str_after(s, "="));
 	} else if(str_starts_with(s, "UNPUBLISH=")) {
 		apply_unpublish_statement(h, str_after(s, "="));
+	} else if(str_starts_with(s, "CONNECT=")) {
+		make_offer(h, str_after(s, "="));
+	} else if(str_starts_with(s, "OFFER=")) {
+		answer_offer(h, str_after(s, "="));
 	}
 
 	UNLOCK();
@@ -41,5 +45,7 @@ void on_host_close(Host* h) {
 	close_all_channels(h);
 	UNLOCK();
 }
+
+
 
 }

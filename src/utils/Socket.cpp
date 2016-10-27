@@ -123,7 +123,7 @@ void TCPSocket::run() {
 
 
 TCPSocket::~TCPSocket() {
-	close();
+	close(true);
 }
 
 bool TCPSocket::wait_connected() {

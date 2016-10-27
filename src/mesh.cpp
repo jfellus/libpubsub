@@ -40,7 +40,7 @@ Host::Host(int port) {
 	id = 0;
 	bConnecting = false;
 	bReady = false;
-	this->ip = "0.0.0.0";
+	this->ip = "localhost";
 	this->port = port;
 	bServer = true;
 	socket = NULL;
@@ -100,7 +100,7 @@ void Host::welcome() {
 }
 
 void Host::on_open() {
-	DBG("Connection established to " << ip << ":" << port);
+	DBG_3("Connection established to " << ip << ":" << port);
 	on_host_open(this);
 	//dump_hosts();
 }
@@ -108,7 +108,7 @@ void Host::on_open() {
 void Host::on_close() {
 	bReady = false;
 	socket->close();
-	DBG("Connection lost to " << ip << ":" << port);
+	DBG_2("Connection lost to " << ip << ":" << port);
 	on_host_close(this);
 	//dump_hosts();
 }
@@ -196,7 +196,7 @@ void add_host(const string& ip, int port) {
 	init();
 	LOCK();
 	if(!has_host(ip, port)) {
-		DBG("Connect to " << ip << ":" << port);
+		DBG_2("Connect to " << ip << ":" << port);
 		new Host(ip, port);
 	}
 	UNLOCK();
