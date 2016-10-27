@@ -33,12 +33,10 @@ public:
 class ClientTCP : public Client, public TCPSocket {
 public:
 	ClientTCP(const char* ip, int port) : TCPSocket(ip, port) {
+		bReconnect = false;
 		TCPSocket::on_close = [&]() { Client::on_close(); };
 	}
 	virtual ~ClientTCP() {}
-
-	virtual void reconnect() { printf("reconnect\n"); }
-
 
 	virtual void send(const char* buf, size_t len) { write(buf, len); }
 
@@ -53,7 +51,7 @@ public:
 static int get_free_port(int firstPort, const char* channel) {
 	char path[512];
 	char _channel[512];
-	system("mkdir -p /tmp/.libpubsub/ports");
+	system("mkdir -p /tmp/.libpubsub/ports; chmod a+wxr /tmp/.libpubsub/ports");
 	int i;
 	for(i = firstPort; ; i++) {
 		sprintf(path, "/tmp/.libpubsub/ports/%u", i);
@@ -66,6 +64,8 @@ static int get_free_port(int firstPort, const char* channel) {
 	FILE *f = fopen(path, "w");
 	fprintf(f, "%s", channel);
 	fclose(f);
+	sprintf(_channel, "chmod a+wr %s", path);
+	system(_channel);
 	return i;
 }
 

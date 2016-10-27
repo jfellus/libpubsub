@@ -5,12 +5,16 @@ HEADERS:=$(shell find src -name "*.h")
 
 CXX:=g++
 
-all: libpubsub.so publish subscribe throughput throughput_shm throughput_pipe pubsub_dump examples
+all: libpubsub.so publish subscribe throughput throughput_shm throughput_pipe pubsub_dump examples mesh
 
 examples: example1 example2 example3 example4 example5 example6
 
 example%: test/example%.o
 	$(CXX) -g -pthread -o $@ $< -L.. -L. -lpubsub -Wl,-rpath=. -Wl,-rpath=..
+	
+mesh: test/mesh.o
+	$(CXX) -g -pthread -o $@ $< -L.. -L. -lpubsub -Wl,-rpath=. -Wl,-rpath=..
+
 
 libpubsub.so: $(OBJECTS)
 	$(CXX) -g -pthread -shared -o $@ $^ -std=c++11 -lrt -lwebsockets

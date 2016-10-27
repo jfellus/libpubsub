@@ -41,10 +41,13 @@ template <typename T> void vector_remove(std::vector<T>& v, const T& a) {
 
 // Debugging
 
-#define DBG(x...) do { if(DBG_LEVEL > 0) printf(x); } while(0)
-#define DBG_2(x...) do { if(DBG_LEVEL > 1) printf(x); } while(0)
-#define DBG_3(x...) do { if(DBG_LEVEL > 2) printf(x); } while(0)
-#define DBG_4(x...) do { if(DBG_LEVEL > 3) printf(x); } while(0)
+#define DBG(x) do { if(DBG_LEVEL > 0) std::cout << x << "\n"; } while(0)
+#define DBG_2(x) do { if(DBG_LEVEL > 1) std::cout << x << "\n"; } while(0)
+#define DBG_3(x) do { if(DBG_LEVEL > 2) std::cout << x << "\n"; } while(0)
+#define DBG_4(x) do { if(DBG_LEVEL > 3) std::cout << x << "\n"; } while(0)
 
+namespace pubsub {
+	extern int DBG_LEVEL;
+}
 
 #endif /* SRC_UTILS_UTILS_H_ */

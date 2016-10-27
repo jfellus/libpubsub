@@ -45,6 +45,10 @@ int main(int argc, char **argv) {
 	try {
 	if(argc<=1) return USAGE();
 
+	pubsub::DBG_LEVEL = 10;
+
+
+	pubsub::add_host("localhost:12213");
 	pubsub::add_host("localhost:12212");
 
 	if(argc<=2) subscribe_in(argv[1]);

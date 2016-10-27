@@ -18,12 +18,42 @@
 #include <arpa/inet.h>
 #include "utils.h"
 #include <errno.h>
+#include <functional>
 
 // TCPSocket
+
+TCPSocket::TCPSocket() : mut(PTHREAD_MUTEX_INITIALIZER) {
+	sem_init(&semConnected, 0, 0);
+	bReconnect = true;
+	this->ip = "";
+	this->port = 0;
+	bStop = true;
+	fd = -1;
+	isClient = true;
+}
 
 TCPSocket::TCPSocket(const char* ip, int port) : mut(PTHREAD_MUTEX_INITIALIZER) {
 	sem_init(&semConnected, 0, 0);
 	bReconnect = true;
+	bStop = true;
+	connect(ip, port);
+}
+
+TCPSocket::TCPSocket(int fd, const char* ip, int port, bool bAutorun) {
+	sem_init(&semConnected, 0, 0);
+	bReconnect = true;
+	this->fd = fd;
+	this->ip = ip;
+	this->port = port;
+	bStop = true;
+	isClient = false;
+	int one = 1;
+	setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
+
+	if(bAutorun) run();
+}
+
+void TCPSocket::connect(const char* ip, int port) {
 	this->ip = ip;
 	this->port = port;
 	struct hostent * server = gethostbyname(ip);
@@ -42,44 +72,36 @@ TCPSocket::TCPSocket(const char* ip, int port) : mut(PTHREAD_MUTEX_INITIALIZER) 
 	run();
 }
 
-TCPSocket::TCPSocket(int fd, const char* ip, int port) {
-	sem_init(&semConnected, 0, 0);
-	bReconnect = true;
-	this->fd = fd;
-	this->ip = ip;
-	this->port = port;
-	isClient = false;
-	int one = 1;
-	setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
-
-	run();
-}
-
 void TCPSocket::run() {
-	bStop = false;
 	thread = std::thread([&](){
 		do {
 			if(isClient) {
-				while (connect(fd,(const sockaddr*)&serv_addr,sizeof(serv_addr)) < 0) usleep(500000);
+				while (::connect(fd,(const sockaddr*)&serv_addr,sizeof(serv_addr)) < 0) usleep(100000);
 				int one = 1;
 				setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
 			}
-			sem_post(&semConnected);
-
 			char buf[5024];
+			bStop = false;
+
+			sem_post(&semConnected);
+			if(on_open) on_open();
 
 			while(!bStop) {
-				int n = recv(fd,buf,5024, 0);
-				if (n <= 0) break;
-				buf[n] = 0;
-				int i;
-				for(i=0; i<n; i++) {
-					//				printf("[tcp] <- %s\n", &buf[i]);
-					on_receive(&buf[i], n);
-					while(buf[i]) i++;
+				int n = recv(fd, buf, 5024, 0);
+				if(n<=0) break;
+				for(int i=0; i<n; i++) {
+					int j;
+					for(j=i; j<n; j++) if(!buf[j] || buf[j]=='\n') break;
+					if(j==n) std::cerr << "[tcp-recv] Error : received message doesn't fit in " << 5024 << "bytes buffer\n";
+					if(j-i) {
+						if(cbRecv) cbRecv(&buf[i], j-i);
+						else on_receive(&buf[i], j-i);
+					}
+					i = j;
 				}
 			}
 			::close(fd);
+
 			if(on_close) on_close();
 			if(bReconnect && isClient) {
 				struct hostent * server = gethostbyname(ip.c_str());
@@ -104,26 +126,32 @@ TCPSocket::~TCPSocket() {
 	close();
 }
 
-void TCPSocket::wait_connected() {
+bool TCPSocket::wait_connected() {
 	sem_wait(&semConnected);
+	return true;
 }
 
-void TCPSocket::close() {
+void TCPSocket::close(bool bDontReconnect) {
+	if(bDontReconnect) bReconnect = false;
 	bStop = true;
 	::close(fd);
 }
 
 
 bool TCPSocket::write(const char* buf, size_t len) {
-	if(bStop) return false;
+	if(bStop) {std::cerr << "[tcp-send] " << ip << ":" << port << " Not ready\n"; return false;}
 	pthread_mutex_lock(&mut);
-//	printf("[tcp] -> %s\n", buf);
-	int n = ::send(fd, (const void*) buf, len, MSG_NOSIGNAL);
+	int n = send(fd, buf, len, MSG_NOSIGNAL);
 	pthread_mutex_unlock(&mut);
-	if (n < 0) return false;
+	if(n!=len) {std::cerr << "[tcp-send] " << ip << ":" << port << " Couldn't send " << len << " bytes (only " << n << ") sent\n"; return false;}
 	return true;
 }
 
+void TCPSocket::remove_listeners() {
+	on_close = NULL;
+	on_open = NULL;
+	cbRecv = NULL;
+}
 
 
 // Server
@@ -177,16 +205,6 @@ void TCPServer::bind(int port) {
 }
 
 void TCPServer::run() {
-	class Connection : public TCPSocket {
-	public:
-		TCPServer* server;
-		Connection(TCPServer* server, int fd, const char* ip, int port) : TCPSocket(fd,ip,port), server(server) {}
-		virtual ~Connection() {}
-		virtual void on_receive(char* buf, size_t len) {
-			server->on_receive(this, buf, len);
-		}
-	};
-
 	bStop = false;
 	thread = std::thread([&](){
 
@@ -196,11 +214,14 @@ void TCPServer::run() {
 		while(!bStop) {
 			int fd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
 			if (fd < 0) throw "ERROR on accept";
-			char *ip = inet_ntoa(cli_addr.sin_addr);
+			char ip[256]; strcpy(ip, inet_ntoa(cli_addr.sin_addr));
 
-			Connection* c = new Connection(this, fd, ip, cli_addr.sin_port);
-			c->on_close = [&]() { vector_remove(connections, (TCPSocket*)c); };
+			TCPSocket* c = new TCPSocket(fd, ip, cli_addr.sin_port, false);
+			if(on_open) on_open(c);
+			std::function<void()> _on_close = c->on_close;
+			c->on_close = [&,_on_close]() { if(_on_close) _on_close(); vector_remove(connections, (TCPSocket*)c); };
 			connections.push_back(c);
+			c->run();
 		}
 
 		::close(sockfd);

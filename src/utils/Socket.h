@@ -23,6 +23,9 @@
 #include <functional>
 #include <utility>
 #include <semaphore.h>
+#include <string>
+
+using namespace std;
 
 class TCPSocket;
 
@@ -45,7 +48,7 @@ public:
 	void broadcast(const char* buf) { broadcast(buf, strlen(buf)+1); }
 	void broadcast(const char* buf, size_t len);
 
-	virtual void on_receive(TCPSocket* connection, char* buf, size_t len) {}
+	std::function<void(TCPSocket* s)> on_open;
 
 protected:
 	void bind(int port);
@@ -65,24 +68,30 @@ public:
 	sem_t semConnected;
 	bool bReconnect;
 
+	std::function<void()> on_open;
 	std::function<void()> on_close;
+	std::function<void(const char*, size_t)> cbRecv;
 
 public:
+	TCPSocket();
 	TCPSocket(const char* ip, int port);
-	TCPSocket(int fd, const char* ip, int port);
+	TCPSocket(int fd, const char* ip, int port, bool bAutorun = true);
 	virtual ~TCPSocket();
 
+	void connect(const char* ip, int port);
 	void reconnect();
 
-	void wait_connected();
-	void close();
+	bool wait_connected();
+	void close(bool bDontReconnect = false);
 
-	virtual void on_receive(char* buf, size_t len) = 0;
+	virtual void on_receive(char* buf, size_t len) {}
 
+	bool write(const string& s) { return write(s.c_str()); }
 	bool write(const char* buf) { return write(buf, strlen(buf)+1); }
 	bool write(const char* buf, size_t len);
 
-protected:
+
+	void remove_listeners();
 	void run();
 };
 

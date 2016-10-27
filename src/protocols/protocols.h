@@ -10,7 +10,6 @@
 
 #include "../libpubsub.h"
 #include "../utils/utils.h"
-#include "../common.h"
 #include "../utils/Socket.h"
 #include <functional>
 #include <utility>

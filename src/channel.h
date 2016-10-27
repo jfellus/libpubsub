@@ -14,6 +14,9 @@
 
 #include "libpubsub.h"
 #include "protocols/protocols.h"
+#include "mesh.h"
+#include "signaling.h"
+
 
 using namespace std;
 
@@ -36,6 +39,8 @@ public:
 
 	DataCallback cb;
 
+	Host* provider;
+
 	vector<TransportDescription> offeredTransports;
 	vector<Server*> servers;
 	vector<Client*> clients;
@@ -45,7 +50,7 @@ public:
 	bool bRequested;
 
 public:
-	EndPoint(const char* name, EndPointType type = BOTH, DataCallback cb = 0);
+	EndPoint(const char* name, EndPointType type = BOTH, DataCallback cb = 0, bool bRequested = false);
 	virtual ~EndPoint();
 
 	bool is_input() { return type == INPUT; }
@@ -68,7 +73,7 @@ public:
 
 // Utilities
 
-bool has_endpoint(const char* name);
+bool has_endpoint(const char* name, bool bCountRequested = false);
 EndPoint* get_endpoint(const char* name);
 EndPoint* request_endpoint(const char* name);
 bool is_transport_offered(const char* channel, const char* transportDescription);

@@ -14,6 +14,7 @@
 namespace pubsub {
 
 extern int DBG_LEVEL;
+extern int SIGNALING_PORT;
 
 
 typedef void (*DataCallback) (const char* buf, size_t len);
@@ -33,6 +34,7 @@ inline void send(int fd, const char* buf) { send(fd, buf, strlen(buf)); }
 
 
 void add_host(const char* url);
+bool try_add_host(const char* url);
 void dump_published_channels();
 
 }

@@ -8,8 +8,7 @@
 
 #include "hosts.h"
 #include "channel.h"
-#include "common.h"
-
+#include "mesh.h"
 
 namespace pubsub {
 
@@ -18,8 +17,8 @@ vector<EndPoint*> endpoints; // The global list of all declared endpoints
 
 // Public API
 
-bool has_endpoint(const char* name) {
-	for(EndPoint* c : endpoints) if(c->name == name && !c->bRequested) return true;
+bool has_endpoint(const char* name, bool bCountRequested) {
+	for(EndPoint* c : endpoints) if(c->name == name && (bCountRequested || !c->bRequested)) return true;
 	return false;
 }
 
@@ -31,8 +30,7 @@ EndPoint* get_endpoint(const char* name) {
 EndPoint* request_endpoint(const char* name) {
 	EndPoint* ep = get_endpoint(name);
 	if(ep) return ep;
-	ep = new EndPoint(name);
-	ep->bRequested = true;
+	ep = new EndPoint(name, BOTH, 0, true);
 	return ep;
 }
 
@@ -52,13 +50,15 @@ TransportDescription find_matching_transport(const char* channel, const char* tr
 
 // EndPoint
 
-EndPoint::EndPoint(const char* name, EndPointType type, DataCallback cb) : bRequested(false) {
+EndPoint::EndPoint(const char* name, EndPointType type, DataCallback cb, bool bRequested) : bRequested(bRequested) {
 	init();
 	if(has_endpoint(name)) fprintf(stderr, "[WARNING] Channel already published : %s\n", name);
 	this->name = name;
 	this->fd = endpoints.size();
 	this->cb = cb;
 	this->type = type;
+
+	printf("++ Endpoint : %s\n", name);
 
 	endpoints.push_back(this);
 	broadcast_published_channels();
@@ -91,7 +91,7 @@ void EndPoint::offer_transport(const char* transportDescription) {
 	servers.push_back(s);
 
 	offeredTransports.push_back(td);
-	DBG("[pubsub] Offer transport %s for channel %s\n", td.to_string().c_str(), name.c_str());
+	DBG("[pubsub] Offer transport " << td << " for channel " << name);
 
 	broadcast_published_channels();
 
@@ -104,12 +104,14 @@ void EndPoint::subscribe(const char* transportDescription, DataCallback cb) {
 		return;
 	}
 
+
 	TransportDescription td = find_matching_transport(transportDescription);
 	if(!td) throw "Transport not offered";
 
 	Client* c = td.create_client();
 	c->cb = cb;
 	c->on_close = [&]()->void {
+		printf("CLOSED\n");
 		bRequested = true;
 		vector_remove(clients, c);
 	};

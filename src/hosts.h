@@ -10,12 +10,11 @@
 
 namespace pubsub {
 
-void broadcast_published_channels();
+static void broadcast_published_channels() {}
+void dump_published_channels() {}
+static void register_host(const char* url) {}
 
-void register_host(const char* url);
-bool has_host(const char* url);
-
-void on_new_host(const char* ip);
+static void on_new_host(const char* ip) {}
 
 }
 
