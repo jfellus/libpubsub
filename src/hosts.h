@@ -10,7 +10,6 @@
 
 namespace pubsub {
 
-static void broadcast_published_channels() {}
 void dump_published_channels() {}
 static void register_host(const char* url) {}
 

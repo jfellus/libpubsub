@@ -41,7 +41,9 @@ public:
 	thread th;
 
 	int commit_id;
+	int known_commit_id;
 	bool bUpToDate;
+	bool bFastforwarding;
 
 public:
 	Host(int port);
@@ -61,6 +63,8 @@ public:
 
 	void setSocket(TCPSocket* socket);
 
+	string tostring();
+
 protected:
 	void welcome();
 };
@@ -73,6 +77,9 @@ Host* get_host(const string& ip, int port);
 void dump_hosts();
 void broadcast_hosts();
 
+
+void on_host_open(Host* h);
+void on_host_close(Host* h);
 
 
 

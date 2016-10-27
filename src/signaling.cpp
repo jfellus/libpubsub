@@ -9,51 +9,37 @@
 #include "signaling.h"
 #include "mesh.h"
 #include "utils/utils.h"
+#include "channel.h"
 
 namespace pubsub {
 
-void broadcast(const string& s) { Host::broadcast(s); }
+
+static pthread_mutex_t mut = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
+static void LOCK() { pthread_mutex_lock(&mut); }
+static void UNLOCK() { pthread_mutex_unlock(&mut); }
+
 
 void digest_message(Host* h, string& s) {
-	// Handle commits
-	if(str_starts_with(s, "YOUR_COMMIT=")) {
-		int commit_id = atoi(str_after(s, "=").c_str());
-		if(Host::me()->commit_id == commit_id) h->bUpToDate = true;
-		dump_states();
-	} else if(str_starts_with(s, "COMMIT=")) {
-		h->commit_id = atoi(str_after(s, "=").c_str());
-		h->send(TOSTRING("YOUR_COMMIT=" << h->commit_id));
-		dump_states();
-	} else if(s == "STATE") {
-		DBG("Received state from " << h->ip << ":" << h->port);
+	LOCK();
+	if(str_starts_with(s, "PUBLISH=")) {
+		apply_publish_statement(h, str_after(s, "="));
+	} else if(str_starts_with(s, "UNPUBLISH=")) {
+		apply_unpublish_statement(h, str_after(s, "="));
 	}
 
-	//
-
+	UNLOCK();
 }
 
-void commit() {
-	for(auto h : hosts) h->bUpToDate = false;
-	Host::me()->commit_id++;
-	Host::me()->bUpToDate = true;
-
-	DBG("COMMIT " << Host::me()->commit_id);
-	dump_states();
-	broadcast_state();
-	broadcast(TOSTRING("COMMIT=" << Host::me()->commit_id));
+void on_host_open(Host* h) {
+	LOCK();
+	broadcast_published_channels();
+	UNLOCK();
 }
 
-
-void broadcast_state() {
-	broadcast("STATE");
+void on_host_close(Host* h) {
+	LOCK();
+	close_all_channels(h);
+	UNLOCK();
 }
 
-
-void dump_states() {
-	DBG("STATES\n--------------");
-	for(auto h : hosts) {
-		DBG(h->ip << ":" << h->port << "   [c" << h->commit_id << "] (" << (h->bUpToDate ? "up to date with me" : "outdated with me"));
-	}
-	DBG("--------------");
-}
 }

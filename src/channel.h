@@ -23,6 +23,18 @@ using namespace std;
 namespace pubsub {
 
 
+void subscribe_channel(const string& name);
+void publish_channel(const string& name);
+
+void apply_channel_statement(Host* h, const string& statement);
+void apply_publish_statement(Host* h, const string& statement);
+void apply_unpublish_statement(Host* h, const string& statement);
+void close_all_channels(Host* h);
+
+void broadcast_published_channels();
+
+///////////////////////////
+
 typedef std::pair<string, DataCallback> SubscriptionRequest;
 
 /**

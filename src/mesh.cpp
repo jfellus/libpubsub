@@ -35,7 +35,8 @@ static void UNLOCK() {
 
 /** Dummy Host for loopback */
 Host::Host(int port) {
-	commit_id = 0; bUpToDate = true;
+	bFastforwarding = false;
+	commit_id = 0; known_commit_id = 0; bUpToDate = true;
 	id = 0;
 	bConnecting = false;
 	bReady = false;
@@ -48,7 +49,8 @@ Host::Host(int port) {
 
 /** Connect to a remote Host */
 Host::Host(const string& ip, int port) {
-	commit_id = -1; bUpToDate = false;
+	bFastforwarding = false;
+	commit_id = -1; known_commit_id = -1; bUpToDate = false;
 	id = 0;
 	bConnecting = false;
 	bReady = false;
@@ -64,7 +66,8 @@ Host::Host(const string& ip, int port) {
 
 /** Add Host from incoming connection */
 Host::Host(const string& ip, int port, TCPSocket* socket) {
-	commit_id = -1; bUpToDate = false;
+	bFastforwarding = false;
+	commit_id = -1; known_commit_id = -1; bUpToDate = false;
 	id = 0;
 	bReady = false;
 	this->ip = ip;
@@ -97,15 +100,17 @@ void Host::welcome() {
 }
 
 void Host::on_open() {
-	DBG_2("Connection established to " << ip << ":" << port);
-	dump_hosts();
+	DBG("Connection established to " << ip << ":" << port);
+	on_host_open(this);
+	//dump_hosts();
 }
 
 void Host::on_close() {
 	bReady = false;
 	socket->close();
-	DBG_2("Connection lost to " << ip << ":" << port);
-	dump_hosts();
+	DBG("Connection lost to " << ip << ":" << port);
+	on_host_close(this);
+	//dump_hosts();
 }
 
 void Host::on_receive(string& s) {
@@ -150,6 +155,10 @@ void Host::broadcast(const string& s) {
 		if(hosts[i]->bReady) hosts[i]->send(s);
 	}
 	UNLOCK();
+}
+
+string Host::tostring() {
+	return TOSTRING(ip << ":" <<port);
 }
 
 void handle_incoming_connection(TCPSocket* socket) {
