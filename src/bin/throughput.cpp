@@ -44,20 +44,21 @@ void publish_in(const char* channel) {
 		}
 	});
 
-	int fd = pubsub::publish_in(channel, [&](const char* buf, size_t len) {
+	Channel* c = publish(channel);
+	c->on_message = [&](const char* buf, size_t len) {
 		bytes += len;
-	});
-	pubsub::offer_transport(channel, "tcp://localhost:12344");
+	};
 	getchar();
 }
 
 
 void subscribe_out(const char* channel) {
-	int fd = pubsub::subscribe_out(channel, "tcp://");
-	char buf[BUFSIZE];
+	Subscription* s = subscribe(channel);
+	char* buf = new char[BUFSIZE];
 	for(int i=0; i<BUFSIZE; i++) buf[i] = i%255;
+	buf[BUFSIZE-1] = '\n';
 	for(;;) {
-		pubsub::send(fd, buf, BUFSIZE);
+		s->write(buf, BUFSIZE);
 	}
 }
 
@@ -65,10 +66,9 @@ void subscribe_out(const char* channel) {
 int main(int argc, char **argv) {
 	try {
 	if(argc<=1) return USAGE();
+	pubsub::DBG_LEVEL = 1;
 
 	if(!strcmp(argv[1], "out")) {
-		//pubsub::add_host("10.20.57.151");
-		pubsub::add_host("localhost:12212");
 		if(argc>=3) BUFSIZE = atoi(argv[2]);
 		subscribe_out("__throughput");
 	}

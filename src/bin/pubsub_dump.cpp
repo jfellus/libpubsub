@@ -27,11 +27,9 @@ int USAGE() {
 int main(int argc, char **argv) {
 	try {
 
-	pubsub::add_host("localhost:12213");
-	pubsub::add_host("localhost:12212");
+		pubsub::dump_hosts();
+		pubsub::dump_channels();
 
-//	pubsub::dump_published_channels(); TODO
-
-	return 0;
+		return 0;
 	} catch(const char* e) { printf("ERROR : %s\n", e); }
 }

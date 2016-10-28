@@ -32,6 +32,8 @@ static void UNLOCK() {
 	pthread_mutex_unlock(&mut);
 }
 
+static bool init();
+
 
 /** Dummy Host for loopback */
 Host::Host(int port) {
@@ -80,6 +82,7 @@ Host::Host(const string& ip, int port, TCPSocket* socket) {
 
 void Host::setSocket(TCPSocket* s) {
 	socket = s;
+	socket->bLinebuffer = true;
 	socket->on_open = [&]() { welcome(); };
 	socket->on_close = [&]() { on_close(); };
 	socket->cbRecv = [&](const char* msg, size_t len) { string s(msg,len); on_receive(s); };
@@ -92,6 +95,7 @@ Host::~Host() {
 }
 
 void Host::welcome() {
+	if(!socket || socket->bStop) return;
 	bConnecting = true;
 	string ip = socket->ip;
 	if(ip == "127.0.0.1") ip = "localhost";
@@ -143,7 +147,7 @@ void Host::on_receive(string& s) {
 }
 
 void Host::send(const string& s) {
-	if(socket) socket->write(s);
+	if(socket && !socket->bStop) socket->write(s);
 };
 
 
@@ -162,6 +166,7 @@ string Host::tostring() {
 }
 
 void handle_incoming_connection(TCPSocket* socket) {
+	socket->bLinebuffer = true;
 	socket->cbRecv =  [&, socket](const char* msg, size_t len) {
 		string s(msg,len);
 		if(str_starts_with(s, "ID=")) {
@@ -191,6 +196,8 @@ void handle_incoming_connection(TCPSocket* socket) {
 		}
 	};
 }
+
+void add_host(const char* url) { add_host(str_before(url, ":"), atoi(str_after(url, ":").c_str())); }
 
 void add_host(const string& ip, int port) {
 	init();
@@ -262,8 +269,10 @@ static void _at_exit() {
 
 
 static bool bInited = false;
-void init() {
-	if(bInited) return;
+static bool __bDummyAutoinit = init();
+
+bool init() {
+	if(bInited) return true;
 	LOCK();
 	if(!bInited) {
 		bInited = true;
@@ -285,6 +294,8 @@ void init() {
 		if(SIGNALING_PORT != SIGNALING_DEFAULT_PORT) add_host("localhost", SIGNALING_DEFAULT_PORT);
 	}
 	UNLOCK();
+	(void)__bDummyAutoinit;
+	return true;
 }
 
 

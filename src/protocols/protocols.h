@@ -8,7 +8,6 @@
 #ifndef SRC_PROTOCOLS_PROTOCOLS_H_
 #define SRC_PROTOCOLS_PROTOCOLS_H_
 
-#include "../libpubsub.h"
 #include "../utils/utils.h"
 #include "../utils/Socket.h"
 #include <functional>
@@ -24,6 +23,8 @@ typedef enum { INPUT, OUTPUT, BOTH } EndPointType;
 
 class Client;
 class Server;
+
+typedef void (*DataCallback)(const char* msg, size_t len);
 
 
 #define INVALID_TRANSPORT_DESCRIPTION(channel) TransportDescription(channel)

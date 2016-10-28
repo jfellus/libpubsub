@@ -20,10 +20,14 @@
 #include <errno.h>
 #include <functional>
 
+
+#define BUFSIZE 512000
+
 // TCPSocket
 
 TCPSocket::TCPSocket() : mut(PTHREAD_MUTEX_INITIALIZER) {
 	sem_init(&semConnected, 0, 0);
+	bLinebuffer = false;
 	bReconnect = true;
 	this->ip = "";
 	this->port = 0;
@@ -34,6 +38,7 @@ TCPSocket::TCPSocket() : mut(PTHREAD_MUTEX_INITIALIZER) {
 
 TCPSocket::TCPSocket(const char* ip, int port) : mut(PTHREAD_MUTEX_INITIALIZER) {
 	sem_init(&semConnected, 0, 0);
+	bLinebuffer = false;
 	bReconnect = true;
 	bStop = true;
 	connect(ip, port);
@@ -41,6 +46,7 @@ TCPSocket::TCPSocket(const char* ip, int port) : mut(PTHREAD_MUTEX_INITIALIZER) 
 
 TCPSocket::TCPSocket(int fd, const char* ip, int port, bool bAutorun) {
 	sem_init(&semConnected, 0, 0);
+	bLinebuffer = false;
 	bReconnect = true;
 	this->fd = fd;
 	this->ip = ip;
@@ -74,30 +80,36 @@ void TCPSocket::connect(const char* ip, int port) {
 
 void TCPSocket::run() {
 	thread = std::thread([&](){
+		char* buf = new char[BUFSIZE];
 		do {
 			if(isClient) {
 				while (::connect(fd,(const sockaddr*)&serv_addr,sizeof(serv_addr)) < 0) usleep(100000);
 				int one = 1;
 				setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
 			}
-			char buf[5024];
 			bStop = false;
 
 			sem_post(&semConnected);
 			if(on_open) on_open();
 
 			while(!bStop) {
-				int n = recv(fd, buf, 5024, 0);
+				int n = recv(fd, buf, BUFSIZE, 0);
 				if(n<=0) break;
-				for(int i=0; i<n; i++) {
-					int j;
-					for(j=i; j<n; j++) if(!buf[j] || buf[j]=='\n') break;
-					if(j==n) std::cerr << "[tcp-recv] Error : received message doesn't fit in " << 5024 << "bytes buffer\n";
-					if(j-i) {
-						if(cbRecv) cbRecv(&buf[i], j-i);
-						else on_receive(&buf[i], j-i);
+				if(bLinebuffer) {
+					for(int i=0; i<n; i++) {
+						int j;
+						for(j=i; j<n; j++) if(!buf[j] || buf[j]=='\n') break;
+						if(j==n) std::cerr << "[tcp-recv] Error : received message doesn't fit in " << BUFSIZE << "bytes buffer\n";
+						if(j-i) {
+							if(cbRecv) cbRecv(&buf[i], j-i);
+							else on_receive(&buf[i], j-i);
+						}
+						i = j;
 					}
-					i = j;
+				}
+				else {
+					if(cbRecv) cbRecv(buf, n);
+					else on_receive(buf, n);
 				}
 			}
 			::close(fd);
@@ -117,6 +129,7 @@ void TCPSocket::run() {
 				isClient = true;
 			}
 		} while(bReconnect && isClient);
+		delete buf; buf = 0;
 	});
 }
 
@@ -139,11 +152,11 @@ void TCPSocket::close(bool bDontReconnect) {
 
 
 bool TCPSocket::write(const char* buf, size_t len) {
-	if(bStop) {std::cerr << "[tcp-send] " << ip << ":" << port << " Not ready\n"; return false;}
+//	if(bStop) {std::cerr << "[tcp-send] " << ip << ":" << port << " Not ready\n"; return false;}
 	pthread_mutex_lock(&mut);
-	int n = send(fd, buf, len, MSG_NOSIGNAL);
+	send(fd, buf, len, MSG_NOSIGNAL);
 	pthread_mutex_unlock(&mut);
-	if(n!=len) {std::cerr << "[tcp-send] " << ip << ":" << port << " Couldn't send " << len << " bytes (only " << n << ") sent\n"; return false;}
+//	if(n!=len) {std::cerr << "[tcp-send] " << ip << ":" << port << " Couldn't send " << len << " bytes (only " << n << ") sent\n"; return false;}
 	return true;
 }
 

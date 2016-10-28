@@ -1,7 +1,7 @@
 /*
  * signaling.h
  *
- *  Created on: 27 oct. 2016
+ *  Created on: 28 oct. 2016
  *      Author: jfellus
  */
 
@@ -12,37 +12,10 @@
 
 namespace pubsub {
 
+void on_host_open(Host* h);
+void on_host_close(Host* h);
+void digest_message(Host* h, string& s);
 
-//void commit();
-
-//void dump_states();
-//
-//
-//class Delta {
-//public:
-//	int commit_id;
-//
-//	Delta() {commit_id = -1;}
-//	virtual ~Delta() {}
-//
-//	virtual string serialize() = 0;
-//};
-//
-//
-///** A basic delta that directly wraps a delta string specification */
-//class BasicDelta : public Delta {
-//public:
-//	string s;
-//	BasicDelta(const string& s) : s(s) {}
-//	virtual ~BasicDelta() {}
-//	virtual string serialize() { return s; }
-//};
-//
-//
-//void add_delta(Delta* d);
-//void add_delta(const string& delta);
-//void apply_delta(Host* h, const string& s);
-//void apply_state(Host* h, const string& s);
 
 }
 

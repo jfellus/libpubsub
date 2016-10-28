@@ -20,14 +20,6 @@ namespace pubsub {
 
 class Host;
 
-extern vector<Host*> hosts;
-
-
-// Interface
-void digest_message(Host* h, string& s);
-////////////
-
-
 
 class Host {
 public:
@@ -70,20 +62,19 @@ protected:
 };
 
 
-void add_host(const string& ip, int port);
 bool has_host(const string& ip, int port);
 Host* get_host(const string& ip, int port);
 
 void dump_hosts();
 void broadcast_hosts();
 
-
-void on_host_open(Host* h);
-void on_host_close(Host* h);
-
+extern void add_host(const char* url);
+extern void add_host(const string& ip, int port);
 
 
-void init(); // TODO hide
+
+extern vector<Host*> hosts;
+
 
 }
 

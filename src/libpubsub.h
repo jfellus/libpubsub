@@ -10,34 +10,29 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <string>
+#include "channel.h"
 
 namespace pubsub {
 
 extern int DBG_LEVEL;
 extern int SIGNALING_PORT;
 
+extern void dump_channels();
+extern void dump_hosts();
 
-typedef void (*DataCallback) (const char* buf, size_t len);
+}
 
-
-int publish_in(const char* channel, DataCallback cb);
-int publish_out(const char* channel);
-
-void offer_transport(const char* channel, const char* transportDescription);
-
-int subscribe_in(const char* channel, const char* transportDescription, DataCallback cb);
-int subscribe_out(const char* channel, const char* transportDescription);
-
-
-void send(int fd, const char* buf, size_t len);
-inline void send(int fd, const char* buf) { send(fd, buf, strlen(buf)); }
+typedef pubsub::Channel Channel;
+typedef pubsub::Subscription Subscription;
 
 
 void add_host(const char* url);
-bool try_add_host(const char* url);
-void dump_published_channels();
+void add_host(const std::string& ip, int port);
 
-}
+Channel* publish(const std::string& channel);
+Subscription* subscribe(const std::string& subscription);
+
 
 
 #endif /* SRC_LIBPUBSUB_H_ */

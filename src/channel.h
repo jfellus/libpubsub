@@ -12,7 +12,6 @@
 #include <string>
 #include <list>
 
-#include "libpubsub.h"
 #include "protocols/protocols.h"
 #include "mesh.h"
 #include "signaling.h"
@@ -24,22 +23,6 @@ namespace pubsub {
 
 class Subscription;
 class Channel;
-
-Subscription* subscribe_channel(const string& name);
-Channel* publish_channel(const string& name);
-
-void apply_channel_statement(Host* h, const string& statement);
-void apply_publish_statement(Host* h, const string& statement);
-void apply_unpublish_statement(Host* h, const string& statement);
-void close_all_channels(Host* h);
-
-void broadcast_published_channels();
-
-void make_offer(Host* h, const string& channel);
-void answer_offer(Host* h, const string& offer);
-
-
-
 
 class Subscription {
 public:
@@ -155,82 +138,29 @@ public:
 };
 
 
+////
+
+
+Channel* get_or_create_channel(const string& name);
+int get_channel_index(Channel* c);
+void close_all_channels(Host* h);
+
+void apply_channel_statement(Host* h, const string& statement);
+void apply_publish_statement(Host* h, const string& statement);
+void apply_unpublish_statement(Host* h, const string& statement);
+
+void make_offer(Host* h, const string& channel);
+void answer_offer(Host* h, const string& offer);
+
+
+void broadcast_published_channels();
 
 
 
 
+// UTILS
+static std::string ENC(const char* str) { return str_replace(str, "/", "@@@"); }
 
-
-
-
-
-
-
-
-
-///////////////////////////
-
-typedef std::pair<string, DataCallback> SubscriptionRequest;
-
-/**
- * An EndPoint holds the declaration of a channel (local or remote) with a given name
- * An EndPoint can offer several transport protocols (represented as TransportDescriptions)
- * An EndPoint maintains a set of transport servers and clients for transmitting actual data
- */
-class EndPoint {
-public:
-	string name;
-	EndPointType type;
-
-	int fd;
-
-	DataCallback cb;
-
-	Host* provider;
-
-	vector<TransportDescription> offeredTransports;
-	vector<Server*> servers;
-	vector<Client*> clients;
-
-	list<SubscriptionRequest> requested_subscriptions;
-
-	bool bRequested;
-
-public:
-	EndPoint(const char* name, EndPointType type = BOTH, DataCallback cb = 0, bool bRequested = false);
-	virtual ~EndPoint();
-
-	bool is_input() { return type == INPUT; }
-	bool is_output() { return type == OUTPUT; }
-	bool is_duplex() { return type == BOTH; }
-
-	void offer_transport(const char* transportDescription);
-	bool is_transport_offered(const char* transportDescription);
-	TransportDescription find_matching_transport(const char* transportDescription);
-	bool on_remote_offered_transport(TransportDescription td);
-	void realize();
-
-	void subscribe(const char* transportDescription, DataCallback cb = 0);
-
-	void send(const char* buf) { send(buf, strlen(buf)+1); }
-	void send(const char* buf, size_t len);
-	void on_receive(const char* buf, size_t len) { cb(buf, len); }
-};
-
-
-// Utilities
-
-bool has_endpoint(const char* name, bool bCountRequested = false);
-EndPoint* get_endpoint(const char* name);
-EndPoint* request_endpoint(const char* name);
-bool is_transport_offered(const char* channel, const char* transportDescription);
-TransportDescription find_matching_transport(const char* channel, const char* transportDescription);
-void close_all_endpoints();
-
-
-
-// Debug
-void dump_endpoints();
 
 }
 

@@ -66,6 +66,7 @@ public:
 	pthread_mutex_t mut;
 	bool isClient;
 	sem_t semConnected;
+	bool bLinebuffer;
 	bool bReconnect;
 
 	std::function<void()> on_open;
