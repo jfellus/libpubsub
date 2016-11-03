@@ -15,11 +15,15 @@
 #include "protocols/protocols.h"
 #include "mesh.h"
 #include "signaling.h"
+#include "shm.h"
 
 
 using namespace std;
 
 namespace pubsub {
+
+#define TRANSPORT_TCP 0
+#define TRANSPORT_SHM 1
 
 class Subscription;
 class Channel;
@@ -28,14 +32,19 @@ class Subscription {
 public:
 	Channel* channel;
 	int port;
-	TCPSocket* socket;
 	bool bConnected;
+	int transport;
+
+	TCPSocket* socket;
+	SHM* shm;
 
 	Subscription(Channel* channel);
 	Subscription(Channel* channel, TCPSocket* socket);
+	Subscription(Channel* channel, const char* shm_path);
 	virtual ~Subscription();
 
-	void connect(int port);
+	void connect_tcp(int port);
+	void connect_shm(const string& shm_path);
 	void close();
 
 	void on_open();
@@ -45,10 +54,6 @@ public:
 	void write(const char* msg, size_t len);
 	void write(const char* msg) { write(msg, strlen(msg)+1); }
 	void write(const string& s) { write(s.c_str()); }
-
-
-protected:
-	void init();
 
 };
 
@@ -60,6 +65,7 @@ public:
 
 	TCPServer* server;
 	int offeredPort;
+	string offeredShmPath;
 	vector<Subscription*> subscriptions;
 	vector<Subscription*> subscriptors;
 
@@ -108,28 +114,48 @@ public:
 
 	void connect() {
 		if(!publisher || subscriptions.size()==0 || publisher == Host::me()) return;
-		if(!offeredPort) publisher->send(TOSTRING("CONNECT=" << name));
-		else {
-			for(Subscription* s : subscriptions) s->connect(offeredPort);
-		}
+		if(publisher->is_local()) connect_shm();
+		else connect_tcp();
+	}
+
+	void connect_tcp() {
+		if(!offeredPort) publisher->send(TOSTRING("CONNECT_TCP=" << name));
+		else for(Subscription* s : subscriptions) s->connect_tcp(offeredPort);
+	}
+
+	void connect_shm() {
+		if(!publisher || subscriptions.size()==0 || publisher == Host::me()) return;
+		if(offeredShmPath.empty()) publisher->send(TOSTRING("CONNECT_SHM" << name));
+		for(Subscription* s : subscriptions) s->connect_shm(offeredShmPath);
 	}
 
 	void disconnect() {
 		for(Subscription* s : subscriptions) s->close();
 	}
 
-	void offer(Host* h) {
+	void offer_tcp(Host* h) {
 		if(!server) {
 			Channel* c = this;
 			server = new TCPServer(10000,20000);
 			server->on_open = [&, c](TCPSocket* s) { new Subscription(c, s); };
 		}
-		h->send(TOSTRING("OFFER=" << name << "|" << server->port));
+		h->send(TOSTRING("OFFER_TCP=" << name << "|" << server->port));
 	}
 
-	void on_offer(const string& offer) {
+	void offer_shm(Host* h) {
+		// TODO Create shm path
+		offeredShmPath = name;
+		h->send(TOSTRING("OFFER_SHM" << name << "|" << offeredShmPath));
+	}
+
+	void on_offer_tcp(const string& offer) {
 		offeredPort = atoi(offer.c_str());
-		connect();
+		connect_tcp();
+	}
+
+	void on_offer_shm(const string& offer) {
+		offeredShmPath = offer;
+		connect_shm();
 	}
 
 	string tostring() {
@@ -149,8 +175,10 @@ void apply_channel_statement(Host* h, const string& statement);
 void apply_publish_statement(Host* h, const string& statement);
 void apply_unpublish_statement(Host* h, const string& statement);
 
-void make_offer(Host* h, const string& channel);
-void answer_offer(Host* h, const string& offer);
+void make_offer_tcp(Host* h, const string& channel);
+void make_offer_shm(Host* h, const string& channel);
+void answer_offer_tcp(Host* h, const string& offer);
+void answer_offer_shm(Host* h, const string& offer);
 
 
 void broadcast_published_channels();

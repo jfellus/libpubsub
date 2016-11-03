@@ -25,10 +25,14 @@ void digest_message(Host* h, string& s) {
 		apply_publish_statement(h, str_after(s, "="));
 	} else if(str_starts_with(s, "UNPUBLISH=")) {
 		apply_unpublish_statement(h, str_after(s, "="));
-	} else if(str_starts_with(s, "CONNECT=")) {
-		make_offer(h, str_after(s, "="));
-	} else if(str_starts_with(s, "OFFER=")) {
-		answer_offer(h, str_after(s, "="));
+	} else if(str_starts_with(s, "CONNECT_TCP=")) {
+		make_offer_tcp(h, str_after(s, "="));
+	} else if(str_starts_with(s, "CONNECT_SHM=")) {
+		make_offer_shm(h, str_after(s, "="));
+	} else if(str_starts_with(s, "OFFER_TCP=")) {
+		answer_offer_tcp(h, str_after(s, "="));
+	} else if(str_starts_with(s, "OFFER_SHM=")) {
+		answer_offer_shm(h, str_after(s, "="));
 	}
 
 	UNLOCK();

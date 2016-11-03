@@ -43,10 +43,11 @@ public:
 	Host(const string& ip, int port, TCPSocket* socket);
 	virtual ~Host();
 
+	bool is_local();
+
 	void on_open();
 	void on_close();
 	void on_receive(string& s);
-
 
 	void send(const string& s);
 

@@ -94,6 +94,10 @@ Host::~Host() {
 	socket->close();
 }
 
+bool Host::is_local() {
+	return this == Host::me() ||  ip == "localhost" || ip == "0.0.0.0" || ip == Host::me()->ip;
+}
+
 void Host::welcome() {
 	if(!socket || socket->bStop) return;
 	bConnecting = true;
