@@ -80,6 +80,7 @@ void TCPSocket::connect(const char* ip, int port) {
 
 void TCPSocket::run() {
 	thread = std::thread([&](){
+		try {
 		char* buf = new char[BUFSIZE];
 		do {
 			if(isClient) {
@@ -130,6 +131,7 @@ void TCPSocket::run() {
 			}
 		} while(bReconnect && isClient);
 		delete buf; buf = 0;
+		} catch(const char* e) { DBG("ERRROR : " << e); }
 	});
 }
 

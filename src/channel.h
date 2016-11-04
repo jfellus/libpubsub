@@ -12,10 +12,10 @@
 #include <string>
 #include <list>
 
-#include "protocols/protocols.h"
 #include "mesh.h"
 #include "signaling.h"
 #include "shm.h"
+#include "libpubsub.h"
 
 
 using namespace std;
@@ -25,12 +25,12 @@ namespace pubsub {
 #define TRANSPORT_TCP 0
 #define TRANSPORT_SHM 1
 
-class Subscription;
-class Channel;
+class SubscriptionImpl;
+class ChannelImpl;
 
-class Subscription {
+class SubscriptionImpl : public Subscription {
 public:
-	Channel* channel;
+	ChannelImpl* channel;
 	int port;
 	bool bConnected;
 	int transport;
@@ -38,10 +38,10 @@ public:
 	TCPSocket* socket;
 	SHM* shm;
 
-	Subscription(Channel* channel);
-	Subscription(Channel* channel, TCPSocket* socket);
-	Subscription(Channel* channel, const char* shm_path);
-	virtual ~Subscription();
+	SubscriptionImpl(ChannelImpl* channel);
+	SubscriptionImpl(ChannelImpl* channel, TCPSocket* socket);
+	SubscriptionImpl(ChannelImpl* channel, const char* shm_path);
+	virtual ~SubscriptionImpl();
 
 	void connect_tcp(int port);
 	void connect_shm(const string& shm_path);
@@ -49,7 +49,6 @@ public:
 
 	void on_open();
 	void on_close();
-	std::function<void(const char* msg, size_t len)> on_message;
 
 	void write(const char* msg, size_t len);
 	void write(const char* msg) { write(msg, strlen(msg)+1); }
@@ -58,7 +57,7 @@ public:
 };
 
 
-class Channel {
+class ChannelImpl : public Channel {
 public:
 	string name;
 	Host* publisher;
@@ -66,14 +65,12 @@ public:
 	TCPServer* server;
 	int offeredPort;
 	string offeredShmPath;
-	vector<Subscription*> subscriptions;
-	vector<Subscription*> subscriptors;
-
-	std::function<void(const char* msg, size_t len)> on_message;
+	vector<SubscriptionImpl*> subscriptions;
+	vector<SubscriptionImpl*> subscriptors;
 
 
-	Channel(const string& name);
-	virtual ~Channel();
+	ChannelImpl(const string& name);
+	virtual ~ChannelImpl();
 
 	void publish() {
 		setPublisher(Host::me());
@@ -85,14 +82,14 @@ public:
 		Host::broadcast(TOSTRING("UNPUBLISH=" << tostring()));
 	}
 
-	Subscription* subscribe() {
-		Subscription* s = new Subscription(this);
+	SubscriptionImpl* subscribe() {
+		SubscriptionImpl* s = new SubscriptionImpl(this);
 		connect();
 		return s;
 	}
 
 	void write(const char* msg, size_t len) {
-		for(Subscription* s : subscriptors) s->write(msg, len);
+		for(SubscriptionImpl* s : subscriptors) s->write(msg, len);
 	}
 	void write(const char* msg) { write(msg, strlen(msg)+1); }
 	void write(const string& s) { write(s.c_str()); }
@@ -114,30 +111,31 @@ public:
 
 	void connect() {
 		if(!publisher || subscriptions.size()==0 || publisher == Host::me()) return;
-		if(publisher->is_local()) connect_shm();
-		else connect_tcp();
+		//if(publisher->is_local()) connect_shm();  // TODO PLUG SHM TRANSPORT HERE
+		// else
+			connect_tcp();
 	}
 
 	void connect_tcp() {
 		if(!offeredPort) publisher->send(TOSTRING("CONNECT_TCP=" << name));
-		else for(Subscription* s : subscriptions) s->connect_tcp(offeredPort);
+		else for(SubscriptionImpl* s : subscriptions) s->connect_tcp(offeredPort);
 	}
 
 	void connect_shm() {
 		if(!publisher || subscriptions.size()==0 || publisher == Host::me()) return;
 		if(offeredShmPath.empty()) publisher->send(TOSTRING("CONNECT_SHM" << name));
-		for(Subscription* s : subscriptions) s->connect_shm(offeredShmPath);
+		for(SubscriptionImpl* s : subscriptions) s->connect_shm(offeredShmPath);
 	}
 
 	void disconnect() {
-		for(Subscription* s : subscriptions) s->close();
+		for(SubscriptionImpl* s : subscriptions) s->close();
 	}
 
 	void offer_tcp(Host* h) {
 		if(!server) {
-			Channel* c = this;
+			ChannelImpl* c = this;
 			server = new TCPServer(10000,20000);
-			server->on_open = [&, c](TCPSocket* s) { new Subscription(c, s); };
+			server->on_open = [&, c](TCPSocket* s) { new SubscriptionImpl(c, s); };
 		}
 		h->send(TOSTRING("OFFER_TCP=" << name << "|" << server->port));
 	}
@@ -167,8 +165,8 @@ public:
 ////
 
 
-Channel* get_or_create_channel(const string& name);
-int get_channel_index(Channel* c);
+ChannelImpl* get_or_create_channel(const string& name);
+int get_channel_index(ChannelImpl* c);
 void close_all_channels(Host* h);
 
 void apply_channel_statement(Host* h, const string& statement);

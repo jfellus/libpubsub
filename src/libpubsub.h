@@ -11,7 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <string>
-#include "channel.h"
+#include <functional>
 
 namespace pubsub {
 
@@ -23,8 +23,25 @@ extern void dump_hosts();
 
 }
 
-typedef pubsub::Channel Channel;
-typedef pubsub::Subscription Subscription;
+
+
+class Channel {
+public:
+	std::function<void(const char* msg, size_t len)> on_message;
+
+	bool write(const char* s, size_t len);
+	inline bool write(const std::string& s) { return write(s.c_str()); }
+	inline bool write(const char* s) { return write(s, strlen(s)); }
+};
+
+class Subscription {
+public:
+	std::function<void(const char* msg, size_t len)> on_message;
+
+	bool write(const char* s, size_t len);
+	inline bool write(const std::string& s) { return write(s.c_str()); }
+	inline bool write(const char* s) { return write(s, strlen(s)); }
+};
 
 
 void add_host(const char* url);

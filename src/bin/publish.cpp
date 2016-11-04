@@ -29,7 +29,7 @@ int main(int argc, char **argv) {
 		int n = 0;
 		char buf[1024];
 
-		//	pubsub::DBG_LEVEL = 10;
+//		pubsub::DBG_LEVEL = 1000;
 
 		Channel* c = publish(argv[1]);
 		c->on_message = [&](const char* buf, size_t len) {
