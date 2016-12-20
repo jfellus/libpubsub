@@ -17,7 +17,7 @@
 
 
 int USAGE() {
-	fprintf(stderr, "USAGE : publish <channel_name>\n");
+	fprintf(stderr, "USAGE : publish [-h host1,host2,...] <channel_name>\n");
 	return 1;
 }
 
@@ -30,6 +30,9 @@ int main(int argc, char **argv) {
 		char buf[1024];
 
 //		pubsub::DBG_LEVEL = 1000;
+
+		pubsub::parse_args(argc, argv);
+
 
 		Channel* c = publish(argv[1]);
 		c->on_message = [&](const char* buf, size_t len) {

@@ -68,6 +68,9 @@ int main(int argc, char **argv) {
 	if(argc<=1) return USAGE();
 	pubsub::DBG_LEVEL = 1;
 
+	pubsub::parse_args(argc, argv);
+
+
 	if(!strcmp(argv[1], "out")) {
 		if(argc>=3) BUFSIZE = atoi(argv[2]);
 		subscribe_out("__throughput");

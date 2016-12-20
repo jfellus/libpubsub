@@ -19,9 +19,9 @@ namespace pubsub {
 
 // SHMServer
 
-SHMServer::SHMServer(const char* name, bool isInput, size_t bufsize) {
+SHMServer::SHMServer(const char* name) {
 	this->name = name;
-	this->bufsize = bufsize;
+	this->bufsize = 0;
 	print_infos("%lu", bufsize);
 
 	fd = shm_open(SSTR("/" << name), O_CREAT | O_RDWR | O_TRUNC, 0666);

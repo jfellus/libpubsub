@@ -56,4 +56,4 @@ install:
 
 
 deploy:
-	rsync -r . 192.168.1.1:libpubsub
+	rsync -v -r . 192.168.1.1:libpubsub

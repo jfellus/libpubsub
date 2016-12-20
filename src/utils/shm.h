@@ -12,6 +12,7 @@
 #include <semaphore.h>
 #include <string>
 #include <thread>
+#include <functional>
 
 
 namespace pubsub {
@@ -73,6 +74,32 @@ protected:
 
 };
 
+
+class SHMServerSync {
+public:
+	SHMServerSync(const char* name);
+	virtual ~SHMServerSync();
+
+	char* get();
+
+	void write();
+	void write(const char* buf, size_t len);
+
+	virtual void on_receive(char* buf, size_t len) {}
+};
+
+class SHMClientSync {
+public:
+	SHMClientSync(const char* name);
+	virtual ~SHMClientSync();
+
+	char* get();
+
+	void write();
+	void write(const char* buf, size_t len);
+
+	virtual void on_receive(char* buf, size_t len) {}
+};
 
 }
 

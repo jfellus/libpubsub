@@ -30,6 +30,8 @@ int main(int argc, char **argv) {
 		char buf[1024];
 //		pubsub::DBG_LEVEL = 1000;
 
+		pubsub::parse_args(argc, argv);
+
 		Subscription* s = subscribe(argv[1]);
 		s->on_message = [&](const char* buf, size_t len) {
 			write(1, (const void*) buf, len);

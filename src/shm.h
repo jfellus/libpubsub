@@ -13,23 +13,23 @@
 #include <string.h>
 #include <stdlib.h>
 #include <string>
+#include <functional>
+
 
 using namespace std;
 
 namespace pubsub {
 
+/** Synchronous SHM */
 class SHM {
 public:
-	string path;
-	char* buf;
-	size_t bufsize;
-	int fd;
+	char* shm;
+	size_t len;
 
 	std::function<void(const char* msg, size_t len)> cbRecv;
 
-	SHM(const string& shmPath, size_t bufsize = 0) {
-		path = shmPath;
-		buf = open(bufsize);
+	SHM(char* shm, size_t len) : shm(shm), len(len) {
+
 	}
 
 	virtual ~SHM() {
@@ -37,9 +37,9 @@ public:
 	}
 
 	void write(const char* msg, size_t len) {
-		if(msg == buf) write();
+		if(msg == shm) write();
 		else {
-			memcpy(buf, msg, len);
+			memcpy(shm, msg, len);
 			write();
 		}
 	}
@@ -47,9 +47,6 @@ public:
 	void write() {
 		// TODO sem_???
 	}
-
-protected:
-	char* open(size_t bufsize);
 };
 
 }

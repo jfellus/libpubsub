@@ -27,6 +27,9 @@ int USAGE() {
 int main(int argc, char **argv) {
 	try {
 
+		pubsub::parse_args(argc, argv);
+
+
 		pubsub::dump_hosts();
 		pubsub::dump_channels();
 
